@@ -45,26 +45,6 @@ BB.conteudo = (function () {
 
   const OPCOES = { s: ['S', 'SS', 'Ç'], x: ['X', 'CH'] };
 
-  // Substantivo próprio ou comum. Em caixa alta não dá para ver a maiúscula,
-  // então nenhuma palavra pode ter as duas leituras: ficaram de fora "Recife"
-  // (recife), "Salvador", "Natal", "Amazonas" (amazonas), "Argentina"
-  // (argentina) e "rio" (Rio).
-  const SUBSTANTIVOS = {
-    proprio: [
-      ['Brasil', 'um país'], ['Portugal', 'um país'], ['Japão', 'um país'],
-      ['Itália', 'um país'], ['Canadá', 'um país'], ['França', 'um país'],
-      ['Paris', 'uma cidade'], ['Manaus', 'uma cidade'], ['Curitiba', 'uma cidade'],
-      ['Londres', 'uma cidade'], ['Brasília', 'uma cidade'], ['Goiânia', 'uma cidade'],
-      ['Pedro', 'uma pessoa'], ['Ana', 'uma pessoa'], ['Lucas', 'uma pessoa'], ['Mariana', 'uma pessoa'],
-      ['Marte', 'um planeta'], ['Saturno', 'um planeta'], ['Júpiter', 'um planeta'],
-      ['África', 'um continente'], ['Europa', 'um continente'],
-    ],
-    comum: [
-      'cidade', 'país', 'planeta', 'menino', 'menina', 'cachorro', 'gato', 'escola', 'professora',
-      'livro', 'bola', 'time', 'flor', 'carro', 'amigo', 'casa', 'mar', 'praia',
-    ],
-  };
-
   function inverter(n) { return Number(String(n).split('').reverse().join('')); }
 
   function criarMat(a, b) {
@@ -106,30 +86,8 @@ BB.conteudo = (function () {
     };
   }
 
-  // A palavra aparece em caixa alta; no aviso e na lista "pra treinar" ela vem
-  // escrita do jeito certo, com ou sem maiúscula, e com o porquê.
-  function criarSubst(palavra) {
-    const proprio = SUBSTANTIVOS.proprio.find(p => p[0] === palavra);
-    const classe = proprio ? 'próprio' : 'comum';
-    const porque = proprio ? 'nome de ' + proprio[1] : 'vale para qualquer ' + palavra;
-    return {
-      id: 'p:s:' + palavra,
-      fase: 'port',
-      pergunta: palavra.toUpperCase(),
-      portas: U.embaralhar(['PRÓPRIO', 'COMUM', null]),
-      certo: classe.toUpperCase(),
-      titulo: (proprio ? 'é ' + porque : porque).toUpperCase(),
-      resposta: '“' + palavra + '” é ' + classe,
-      treinar: '“' + palavra + '” é ' + classe + ': ' + porque,
-    };
-  }
-
   function existe(id) {
     if (id.startsWith('m:')) return /^m:\d+x\d+$/.test(id);
-    if (id.startsWith('p:s:')) {
-      const palavra = id.slice(4);
-      return SUBSTANTIVOS.comum.includes(palavra) || SUBSTANTIVOS.proprio.some(p => p[0] === palavra);
-    }
     const marcada = id.slice(2);
     return ['s', 'x'].some(f => PALAVRAS[f].facil.includes(marcada) || PALAVRAS[f].dificil.includes(marcada));
   }
@@ -139,7 +97,6 @@ BB.conteudo = (function () {
       const [a, b] = id.slice(2).split('x').map(Number);
       return criarMat(a, b);
     }
-    if (id.startsWith('p:s:')) return criarSubst(id.slice(4));
     return criarPort(id.slice(2));
   }
 
@@ -160,12 +117,10 @@ BB.conteudo = (function () {
       .slice(0, 3);
   }
 
-  // Meia corrida de português: 2 de S/SS/Ç, 2 de X/CH e 2 de substantivo
-  // (um próprio e um comum, para não dar para chutar sempre o mesmo).
-  function metade(nivel, substantivos) {
-    const s = U.embaralhar(PALAVRAS.s[nivel]).slice(0, 2);
+  function metade(nivel) {
+    const s = U.embaralhar(PALAVRAS.s[nivel]).slice(0, 4);
     const x = U.embaralhar(PALAVRAS.x[nivel]).slice(0, 2);
-    return U.embaralhar(s.concat(x).map(criarPort).concat(substantivos.map(criarSubst)));
+    return U.embaralhar(s.concat(x)).map(criarPort);
   }
 
   function montarCorrida(fase) {
@@ -182,9 +137,7 @@ BB.conteudo = (function () {
         lista.push(q);
       }
     } else {
-      const proprios = U.embaralhar(SUBSTANTIVOS.proprio).slice(0, 2).map(p => p[0]);
-      const comuns = U.embaralhar(SUBSTANTIVOS.comum).slice(0, 2);
-      lista = metade('facil', [proprios[0], comuns[0]]).concat(metade('dificil', [proprios[1], comuns[1]]));
+      lista = metade('facil').concat(metade('dificil'));
     }
     // Revisão das corridas anteriores nas portas 3, 7 e 11.
     const vagas = [2, 6, 10];
@@ -209,7 +162,7 @@ BB.conteudo = (function () {
   }
 
   return {
-    PORTAS, PALAVRAS, SUBSTANTIVOS, FAIXAS_MAT, MENSAGENS,
-    criarMat, criarPort, criarSubst, montarCorrida, agendarRepeticao, registrar, proximaMensagem,
+    PORTAS, PALAVRAS, FAIXAS_MAT, MENSAGENS,
+    criarMat, criarPort, montarCorrida, agendarRepeticao, registrar, proximaMensagem,
   };
 })();

@@ -71,11 +71,8 @@ BB.som = (function () {
     U.dados.som = !U.dados.som;
     U.salvar();
     if (U.dados.som) destravar();
-    else BB.musica.parar();
     return U.dados.som;
   }
 
-  function contexto() { return ctx; }
-
-  return { destravar, tocar, alternar, contexto };
+  return { destravar, tocar, alternar };
 })();

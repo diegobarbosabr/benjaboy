@@ -1,6 +1,6 @@
 // Liga tudo: telas, toques, laço do jogo e recordes.
 (function () {
-  const U = BB.util, S = BB.som, M = BB.musica, K = BB.conteudo, R = BB.corrida, CENA = BB.cena, D = BB.desenho;
+  const U = BB.util, S = BB.som, K = BB.conteudo, R = BB.corrida, CENA = BB.cena, D = BB.desenho;
   const $ = id => document.getElementById(id);
   const tela = $('tela');
   const ctx = tela.getContext('2d');
@@ -44,7 +44,6 @@
   }
 
   function abrirMenu() {
-    M.parar();
     rodando = false;
     pausado = false;
     $('rec-mat').textContent = textoRecorde(U.dados.recordes.mat);
@@ -54,7 +53,6 @@
   }
 
   function comecar(qual) {
-    M.parar();
     S.destravar();
     fase = qual;
     R.iniciar(fase, K.proximaMensagem());
@@ -72,7 +70,6 @@
   }
 
   function terminar() {
-    M.parar();
     rodando = false;
     const c = R.estado;
     const pos = c.posicaoFinal;
@@ -98,7 +95,7 @@
       const lista = document.createElement('ul');
       erros.forEach(q => {
         const li = document.createElement('li');
-        li.textContent = q.treinar || q.resposta;
+        li.textContent = q.resposta;
         lista.appendChild(li);
       });
       caixa.append(titulo, lista);
@@ -111,14 +108,12 @@
   function pausar() {
     if (!rodando || pausado) return;
     pausado = true;
-    M.parar();
     mostrar('pausa');
   }
 
   function continuar() {
     pausado = false;
     ultimo = performance.now();
-    if (R.estado.estado === 'correndo') M.iniciar(fase);
     mostrar(null);
   }
 

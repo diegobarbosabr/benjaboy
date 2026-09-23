@@ -169,12 +169,7 @@ BB.cena = (function () {
     ctx.fillStyle = '#fff';
     ctx.font = D.fonte(tamQ);
     if (q.fase === 'mat') ctx.fillText(q.pergunta + ' = ?', W / 2, linhaQ);
-    else if (q.antes !== undefined) lacuna(ctx, q, W / 2, linhaQ, tamQ);
-    else {
-      const w = ctx.measureText(q.pergunta).width;
-      if (w > W - 28) ctx.font = D.fonte(tamQ * (W - 28) / w);
-      ctx.fillText(q.pergunta, W / 2, linhaQ);
-    }
+    else lacuna(ctx, q, W / 2, linhaQ, tamQ);
     if (q.repeticao) {
       const ty = linhaQ - tamQ * 0.8;
       ctx.fillStyle = '#ff3d7f';
@@ -209,8 +204,6 @@ BB.cena = (function () {
       ctx.fill();
       ctx.fillStyle = i === minha ? '#1a0b3d' : '#fff';
       ctx.font = D.fonte(22);
-      const tw = ctx.measureText(rotulo).width;
-      if (tw > w * 0.88) ctx.font = D.fonte(22 * w * 0.88 / tw);
       ctx.fillText(rotulo, cx, linhaO + 1);
     }
   }
@@ -226,21 +219,17 @@ BB.cena = (function () {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       if (a.grande) {
-        const titulo = a.titulo || 'O CERTO É';
-        let tam = 28, tamT = 13;
+        let tam = 28;
         ctx.font = D.fonte(tam);
         const w = ctx.measureText(a.texto).width;
         if (w > W - 64) { tam *= (W - 64) / w; ctx.font = D.fonte(tam); }
-        const wTexto = ctx.measureText(a.texto).width;
-        ctx.font = D.fonte(tamT);
-        const wt = ctx.measureText(titulo).width;
-        if (wt > W - 64) { tamT *= (W - 64) / wt; ctx.font = D.fonte(tamT); }
-        const larg = Math.min(W - 24, Math.max(wTexto, ctx.measureText(titulo).width) + 40);
+        const larg = Math.min(W - 24, ctx.measureText(a.texto).width + 40);
         ctx.fillStyle = a.cor;
         D.caixa(ctx, -larg / 2, -34, larg, 76, 16);
         ctx.fill();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-        ctx.fillText(titulo, 0, -16);
+        ctx.font = D.fonte(13);
+        ctx.fillText('O CERTO É', 0, -16);
         ctx.fillStyle = '#fff';
         ctx.font = D.fonte(tam);
         ctx.fillText(a.texto, 0, 14);

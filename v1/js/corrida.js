@@ -1,7 +1,7 @@
 // A corrida: pista de três pistas, portas com respostas, obstáculos e bots.
 // Unidades do mundo: a pista tem 300 de largura; "y" cresce para a frente.
 BB.corrida = (function () {
-  const U = BB.util, S = BB.som, M = BB.musica, K = BB.conteudo;
+  const U = BB.util, D = BB.desenho, S = BB.som, K = BB.conteudo;
 
   const LARG = 300, FAIXA = 100;
   const ESPACO = 1400;         // distância entre portas
@@ -108,7 +108,7 @@ BB.corrida = (function () {
         // Depois do tombo ele atravessa a porta certa: o acerto fica na memória.
         r.alvoX = centroFaixa(certa);
         tropecar(r, TEMPO_ERRO, 60);
-        aviso(q.resposta, '#ff4d4d', q.titulo ? 3 : 2.2, true, q.titulo);
+        aviso(q.resposta, '#ff4d4d', 2.2, true);
         S.tocar('erro');
         K.agendarRepeticao(c.perguntas, k);
       }
@@ -176,7 +176,6 @@ BB.corrida = (function () {
         c.estado = 'chegou';
         c.fimEm = 2.6;
         confete();
-        M.parar();
         S.tocar('chegada');
       }
     }
@@ -208,7 +207,6 @@ BB.corrida = (function () {
       if (c.contagem <= 0) {
         c.estado = 'correndo';
         S.tocar('largada');
-        M.iniciar(c.fase);
         aviso('JÁ!', '#ffd23f', 0.8);
       }
     } else {
@@ -235,9 +233,9 @@ BB.corrida = (function () {
   }
 
   // ---------- Efeitos ----------
-  function aviso(texto, cor, duracao, grande, titulo) {
+  function aviso(texto, cor, duracao, grande) {
     c.avisos = c.avisos.filter(a => a.grande !== !!grande);
-    c.avisos.push({ texto, cor, t: duracao, total: duracao, grande: !!grande, titulo });
+    c.avisos.push({ texto, cor, t: duracao, total: duracao, grande: !!grande });
   }
 
   function estilhacos(x, y) {
