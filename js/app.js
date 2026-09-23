@@ -1,0 +1,170 @@
+// Liga tudo: telas, toques, laço do jogo e recordes.
+(function () {
+  const U = BB.util, S = BB.som, K = BB.conteudo, R = BB.corrida, CENA = BB.cena, D = BB.desenho;
+  const $ = id => document.getElementById(id);
+  const tela = $('tela');
+  const ctx = tela.getContext('2d');
+  const telas = { menu: $('menu'), resultado: $('resultado'), pausa: $('pausa') };
+  const CORACAO = '<svg class="coracao" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
+
+  let fase = null, rodando = false, pausado = false, ultimo = performance.now();
+
+  // nome null = corrida na tela, sem painel por cima.
+  function mostrar(nome) {
+    Object.keys(telas).forEach(k => telas[k].classList.toggle('escondido', k !== nome));
+    $('bt-pausa').classList.toggle('escondido', nome !== null);
+    $('bt-som').classList.toggle('escondido', nome === null);
+  }
+
+  function retrato(canvas, expressao) {
+    const tam = canvas.clientWidth || 190;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(tam * dpr);
+    canvas.height = Math.round(tam * dpr);
+    const c2 = canvas.getContext('2d');
+    c2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c2.clearRect(0, 0, tam, tam);
+    c2.save();
+    c2.beginPath();
+    c2.arc(tam / 2, tam / 2, tam / 2 - 3, 0, Math.PI * 2);
+    c2.fillStyle = '#ffd23f';
+    c2.fill();
+    c2.clip();
+    D.retrato(c2, tam / 2, tam * 0.44, tam * 0.27, expressao);
+    c2.restore();
+    c2.lineWidth = 4;
+    c2.strokeStyle = '#ffffff';
+    c2.beginPath();
+    c2.arc(tam / 2, tam / 2, tam / 2 - 3, 0, Math.PI * 2);
+    c2.stroke();
+  }
+
+  function textoRecorde(r) {
+    return r ? 'Recorde: ' + r.pos + 'º lugar · ' + r.acertos + '/' + K.PORTAS : '';
+  }
+
+  function abrirMenu() {
+    rodando = false;
+    pausado = false;
+    $('rec-mat').textContent = textoRecorde(U.dados.recordes.mat);
+    $('rec-port').textContent = textoRecorde(U.dados.recordes.port);
+    mostrar('menu');
+    retrato($('retrato-menu'), 'normal');
+  }
+
+  function comecar(qual) {
+    S.destravar();
+    fase = qual;
+    R.iniciar(fase, K.proximaMensagem());
+    CENA.medir(tela);
+    rodando = true;
+    pausado = false;
+    ultimo = performance.now();
+    mostrar(null);
+  }
+
+  function melhorQue(novo, antigo) {
+    if (!antigo) return true;
+    if (novo.pos !== antigo.pos) return novo.pos < antigo.pos;
+    return novo.acertos > antigo.acertos;
+  }
+
+  function terminar() {
+    rodando = false;
+    const c = R.estado;
+    const pos = c.posicaoFinal;
+    const novo = { pos, acertos: c.acertos };
+    const recorde = melhorQue(novo, U.dados.recordes[fase]);
+    if (recorde) {
+      U.dados.recordes[fase] = novo;
+      U.salvar();
+    }
+    $('res-pos').textContent = pos === 1 ? '1º LUGAR!' : pos + 'º LUGAR';
+    $('res-acertos').textContent = 'Acertou ' + c.acertos + ' de ' + K.PORTAS;
+    $('res-recorde').classList.toggle('escondido', !recorde);
+    $('res-msg').textContent = c.mensagem + ' ';
+    $('res-msg').insertAdjacentHTML('beforeend', CORACAO);
+
+    const vistos = new Set();
+    const erros = c.erros.filter(q => !vistos.has(q.id) && vistos.add(q.id));
+    const caixa = $('res-treinar');
+    caixa.replaceChildren();
+    if (erros.length) {
+      const titulo = document.createElement('h2');
+      titulo.textContent = 'PRA TREINAR';
+      const lista = document.createElement('ul');
+      erros.forEach(q => {
+        const li = document.createElement('li');
+        li.textContent = q.resposta;
+        lista.appendChild(li);
+      });
+      caixa.append(titulo, lista);
+    }
+    caixa.classList.toggle('escondido', !erros.length);
+    mostrar('resultado');
+    retrato($('retrato-res'), pos <= 3 ? 'feliz' : 'normal');
+  }
+
+  function pausar() {
+    if (!rodando || pausado) return;
+    pausado = true;
+    mostrar('pausa');
+  }
+
+  function continuar() {
+    pausado = false;
+    ultimo = performance.now();
+    mostrar(null);
+  }
+
+  function quadro(agora) {
+    const dt = (agora - ultimo) / 1000;
+    ultimo = agora;
+    if (rodando && !pausado) {
+      R.atualizar(dt);
+      CENA.desenhar(ctx, agora / 1000);
+      if (R.estado.estado === 'fim') terminar();
+    }
+    requestAnimationFrame(quadro);
+  }
+
+  // ---------- Entrada ----------
+  tela.addEventListener('pointerdown', e => {
+    if (!rodando || pausado) return;
+    e.preventDefault();
+    R.mover(e.clientX < window.innerWidth / 2 ? -1 : 1);
+  });
+  tela.addEventListener('contextmenu', e => e.preventDefault());
+  window.addEventListener('keydown', e => {
+    if (!rodando || pausado) return;
+    if (e.key === 'ArrowLeft' || e.key === 'a') R.mover(-1);
+    if (e.key === 'ArrowRight' || e.key === 'd') R.mover(1);
+  });
+
+  document.querySelectorAll('.fase').forEach(b => b.addEventListener('click', () => comecar(b.dataset.fase)));
+  $('bt-denovo').addEventListener('click', () => comecar(fase));
+  $('bt-menu').addEventListener('click', abrirMenu);
+  $('bt-pausa').addEventListener('click', pausar);
+  $('bt-continuar').addEventListener('click', () => { S.destravar(); continuar(); });
+  $('bt-sair').addEventListener('click', abrirMenu);
+
+  function iconeSom() {
+    $('ic-som-on').classList.toggle('escondido', !U.dados.som);
+    $('ic-som-off').classList.toggle('escondido', U.dados.som);
+  }
+  $('bt-som').addEventListener('click', () => { S.alternar(); iconeSom(); });
+
+  // Saiu do app (notificação, trocou de janela): a corrida espera por ele.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) pausar(); });
+  window.addEventListener('resize', () => {
+    // Deitou o celular no meio da corrida: pausa por baixo do aviso de virar.
+    if (window.innerWidth > window.innerHeight && window.innerHeight <= 500) pausar();
+    CENA.medir(tela);
+    if (!telas.menu.classList.contains('escondido')) retrato($('retrato-menu'), 'normal');
+  });
+
+  CENA.medir(tela);
+  iconeSom();
+  abrirMenu();
+  requestAnimationFrame(quadro);
+})();

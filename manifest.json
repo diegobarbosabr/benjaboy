@@ -1,0 +1,13 @@
+{
+  "name": "Benjaboy",
+  "short_name": "Benjaboy",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1a0b3d",
+  "theme_color": "#1a0b3d",
+  "icons": [
+    { "src": "icone.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
