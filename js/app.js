@@ -7,13 +7,23 @@
   const telas = { menu: $('menu'), resultado: $('resultado'), pausa: $('pausa') };
   const CORACAO = '<svg class="coracao" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>';
 
-  let fase = null, rodando = false, pausado = false, ultimo = performance.now();
+  let fase = null, rodando = false, pausado = false, ultimo = performance.now(), municaoVista = -1;
 
   // nome null = corrida na tela, sem painel por cima.
   function mostrar(nome) {
     Object.keys(telas).forEach(k => telas[k].classList.toggle('escondido', k !== nome));
     $('bt-pausa').classList.toggle('escondido', nome !== null);
     $('bt-som').classList.toggle('escondido', nome === null);
+    $('bt-atirar').classList.toggle('escondido', nome !== null || fase !== 'kart');
+  }
+
+  // Botão ATIRAR mostra a munição em bolinhas; só redesenha quando muda.
+  function atualizarMunicao() {
+    const n = R.estado ? R.estado.jogador.gosma : 0;
+    if (n === municaoVista) return;
+    municaoVista = n;
+    $('bt-atirar').classList.toggle('vazio', n === 0);
+    $('bt-atirar').querySelectorAll('.municao i').forEach((bola, i) => bola.classList.toggle('cheia', i < n));
   }
 
   function retrato(canvas, expressao) {
@@ -49,6 +59,7 @@
     pausado = false;
     $('rec-mat').textContent = textoRecorde(U.dados.recordes.mat);
     $('rec-port').textContent = textoRecorde(U.dados.recordes.port);
+    $('rec-kart').textContent = textoRecorde(U.dados.recordes.kart);
     mostrar('menu');
     retrato($('retrato-menu'), 'normal');
   }
@@ -62,6 +73,8 @@
     rodando = true;
     pausado = false;
     ultimo = performance.now();
+    municaoVista = -1;
+    atualizarMunicao();
     mostrar(null);
   }
 
@@ -83,6 +96,7 @@
       U.salvar();
     }
     $('res-pos').textContent = pos === 1 ? '1º LUGAR!' : pos + 'º LUGAR';
+    $('res-premio').classList.toggle('escondido', pos !== 1);
     $('res-acertos').textContent = 'Acertou ' + c.acertos + ' de ' + K.PORTAS;
     $('res-recorde').classList.toggle('escondido', !recorde);
     $('res-msg').textContent = c.mensagem + ' ';
@@ -128,6 +142,7 @@
     if (rodando && !pausado) {
       R.atualizar(dt);
       CENA.desenhar(ctx, agora / 1000);
+      if (fase === 'kart') atualizarMunicao();
       if (R.estado.estado === 'fim') terminar();
     }
     requestAnimationFrame(quadro);
@@ -144,6 +159,14 @@
     if (!rodando || pausado) return;
     if (e.key === 'ArrowLeft' || e.key === 'a') R.mover(-1);
     if (e.key === 'ArrowRight' || e.key === 'd') R.mover(1);
+    if (e.key === ' ' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      R.atirar();
+    }
+  });
+  $('bt-atirar').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (rodando && !pausado) R.atirar();
   });
 
   document.querySelectorAll('.fase').forEach(b => b.addEventListener('click', () => comecar(b.dataset.fase)));

@@ -2,7 +2,7 @@
 // às pistas.
 BB.cena = (function () {
   const D = BB.desenho, R = BB.corrida, U = BB.util;
-  const ALTURA_CORREDOR = 72;     // em unidades do mundo
+  const ALTURA_CORREDOR = 72, ALTURA_KART = 80;   // em unidades do mundo
   const VISTA_A_FRENTE = 520;     // quanto da pista aparece à frente do jogador
   let W = 0, H = 0, dpr = 1, esc = 1, x0 = 0, py = 0, hudH = 0;
 
@@ -22,26 +22,27 @@ BB.cena = (function () {
   function sy(y, cam) { return py - (y - cam) * esc; }
   function faixaDo(x) { return U.limitar(Math.floor(x / R.FAIXA), 0, 2); }
 
-  function fundo(ctx) {
+  // No kart a pista é de asfalto, com grama dos lados.
+  function fundo(ctx, kart) {
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#3c0d7a');
-    g.addColorStop(1, '#7b1fa2');
+    g.addColorStop(0, kart ? '#14532d' : '#3c0d7a');
+    g.addColorStop(1, kart ? '#15803d' : '#7b1fa2');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
 
-  function pista(ctx, cam) {
+  function pista(ctx, cam, kart) {
     const topo = cam + py / esc + 60, base = cam - (H - py) / esc - 60;
     const xa = sx(0), xb = sx(R.LARG);
-    ctx.fillStyle = '#efeaff';
+    ctx.fillStyle = kart ? '#3b3f4c' : '#efeaff';
     ctx.fillRect(xa, 0, xb - xa, H);
-    ctx.fillStyle = '#e2d9ff';
+    ctx.fillStyle = kart ? '#343845' : '#e2d9ff';
     for (let y = Math.floor(base / 200) * 200; y < topo; y += 200) {
       const a = sy(y + 100, cam);
       ctx.fillRect(xa, a, xb - xa, 100 * esc);
     }
     // Divisórias tracejadas, presas ao chão para mostrar o movimento.
-    ctx.fillStyle = 'rgba(91, 43, 217, 0.3)';
+    ctx.fillStyle = kart ? 'rgba(255, 255, 255, 0.7)' : 'rgba(91, 43, 217, 0.3)';
     for (let y = Math.floor(base / 60) * 60; y < topo; y += 60) {
       [1, 2].forEach(i => ctx.fillRect(sx(i * R.FAIXA) - 1.5 * esc, sy(y + 30, cam), 3 * esc, 30 * esc));
     }
@@ -49,7 +50,7 @@ BB.cena = (function () {
     const zw = 9 * esc;
     for (let y = Math.floor(base / 40) * 40; y < topo; y += 40) {
       const k = Math.round(y / 40);
-      ctx.fillStyle = ((k % 2) + 2) % 2 === 0 ? '#ff3d7f' : '#ffffff';
+      ctx.fillStyle = ((k % 2) + 2) % 2 === 0 ? (kart ? '#e63946' : '#ff3d7f') : '#ffffff';
       const a = sy(y + 40, cam);
       ctx.fillRect(xa - zw, a, zw, 40 * esc);
       ctx.fillRect(xb, a, zw, 40 * esc);
@@ -58,22 +59,22 @@ BB.cena = (function () {
     ctx.fillRect(xa, sy(0, cam) - 5 * esc, xb - xa, 10 * esc);
   }
 
-  function corredor(ctx, r, cam, o) {
-    const x = sx(r.x), y = sy(r.y, cam), h = ALTURA_CORREDOR * esc;
+  function corredor(ctx, r, cam, o, kart) {
+    const x = sx(r.x), y = sy(r.y, cam), h = (kart ? ALTURA_KART : ALTURA_CORREDOR) * esc;
     if (r.jogador) {
       ctx.strokeStyle = 'rgba(255, 210, 63, 0.9)';
       ctx.lineWidth = 3;
-      D.elipse(ctx, x, y, 26 * esc, 8 * esc);
+      D.elipse(ctx, x, y, (kart ? 40 : 26) * esc, 8 * esc);
       ctx.stroke();
     }
     o.rot = r.tonto > 0 ? r.girar : 0;
     o.tonto = r.tonto > 0;
-    D.corredor(ctx, x, y, h, r.fase, o);
+    (kart ? D.kart : D.corredor)(ctx, x, y, h, r.fase, o);
     if (r.nome) {
       ctx.font = D.fonte(Math.max(9, 10 * esc));
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(26, 11, 61, 0.55)';
+      ctx.fillStyle = kart ? 'rgba(255, 255, 255, 0.7)' : 'rgba(26, 11, 61, 0.55)';
       ctx.fillText(r.nome, x, y - h * 1.18);
     }
   }
@@ -279,14 +280,18 @@ BB.cena = (function () {
     if (!c) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const cam = c.cameraY;
-    fundo(ctx);
-    pista(ctx, cam);
+    fundo(ctx, c.kart);
+    pista(ctx, cam, c.kart);
 
     // Do mais longe para o mais perto, para cada coisa tapar o que está atrás.
     const itens = [];
     const visivel = y => { const s = sy(y, cam); return s > hudH - 260 && s < H + 160; };
+    const respostas = c.kart ? D.caixas : D.portal;
     c.portas.forEach((p, i) => {
-      if (visivel(p.y)) itens.push({ y: p.y, f: () => D.portal(ctx, sx(0), sy(p.y, cam), R.LARG * esc, c.perguntas[i].portas, p.estados, t) });
+      if (visivel(p.y)) itens.push({ y: p.y, f: () => respostas(ctx, sx(0), sy(p.y, cam), R.LARG * esc, c.perguntas[i].portas, p.estados, t) });
+    });
+    c.tiros.forEach(tr => {
+      if (visivel(tr.y)) itens.push({ y: tr.y, f: () => D.gosma(ctx, sx(tr.x), sy(tr.y, cam) - 18 * esc, 9 * esc) });
     });
     c.obstaculos.forEach(o => {
       if (!visivel(o.y)) return;
@@ -298,9 +303,9 @@ BB.cena = (function () {
     });
     if (visivel(c.chegadaY)) itens.push({ y: c.chegadaY, f: () => D.chegada(ctx, sx(0), sy(c.chegadaY, cam), R.LARG * esc, c.mensagem) });
     c.bots.forEach(b => {
-      if (visivel(b.y)) itens.push({ y: b.y, f: () => corredor(ctx, b, cam, { capacete: b.cor, cor: b.cor }) });
+      if (visivel(b.y)) itens.push({ y: b.y, f: () => corredor(ctx, b, cam, { capacete: b.cor, cor: b.cor }, c.kart) });
     });
-    itens.push({ y: c.jogador.y - 0.01, f: () => corredor(ctx, c.jogador, cam, { numero: 'B' }) });
+    itens.push({ y: c.jogador.y - 0.01, f: () => corredor(ctx, c.jogador, cam, { numero: 'B' }, c.kart) });
     itens.sort((a, b) => b.y - a.y);
     itens.forEach(i => i.f());
 

@@ -88,6 +88,46 @@ BB.conteudo = (function () {
     };
   }
 
+  // Fase do kart: contas simples. As multiplicações usam só as tabuadas mais
+  // fáceis e têm o mesmo id da tabuada, então o erro no kart volta lá também.
+  const KART = {
+    soma: { de: 2, ate: 10 },
+    subtracao: { de: 6, ate: 18, tiraAte: 9 },
+    tabelas: [2, 3, 5, 10],
+    fatores: { de: 2, ate: 9 },
+  };
+
+  function criarConta(op, a, b) {
+    const certo = op === '+' ? a + b : a - b;
+    const simbolo = op === '+' ? '+' : '−';
+    // Erros típicos: errar por 1 ou 2; na subtração, às vezes, somar no lugar.
+    const candidatos = U.embaralhar([certo + 1, certo - 1, certo + 2, certo - 2]);
+    if (op === '-' && Math.random() < 0.5) candidatos.unshift(a + b);
+    candidatos.push(certo + 10);
+    const erradas = [];
+    for (const n of candidatos) {
+      if (n >= 0 && n !== certo && !erradas.includes(n)) erradas.push(n);
+      if (erradas.length === 2) break;
+    }
+    return {
+      id: 'k:' + a + op + b,
+      fase: 'mat',
+      pergunta: a + ' ' + simbolo + ' ' + b,
+      portas: U.embaralhar([certo].concat(erradas).map(String)),
+      certo: String(certo),
+      resposta: a + ' ' + simbolo + ' ' + b + ' = ' + certo,
+    };
+  }
+
+  function contaKart(tipo) {
+    if (tipo === '+') return criarConta('+', U.inteiro(KART.soma.de, KART.soma.ate), U.inteiro(KART.soma.de, KART.soma.ate));
+    if (tipo === '-') {
+      const a = U.inteiro(KART.subtracao.de, KART.subtracao.ate);
+      return criarConta('-', a, U.inteiro(2, Math.min(KART.subtracao.tiraAte, a - 1)));
+    }
+    return criarMat(U.sortear(KART.tabelas), U.inteiro(KART.fatores.de, KART.fatores.ate));
+  }
+
   function criarPort(marcada) {
     const m = /^(.*)\[(.+)\](.*)$/.exec(marcada);
     const antes = m[1], certo = m[2], depois = m[3];
@@ -126,6 +166,7 @@ BB.conteudo = (function () {
 
   function existe(id) {
     if (id.startsWith('m:')) return /^m:\d+x\d+$/.test(id);
+    if (id.startsWith('k:')) return /^k:\d+[+-]\d+$/.test(id);
     if (id.startsWith('p:s:')) {
       const palavra = id.slice(4);
       return SUBSTANTIVOS.comum.includes(palavra) || SUBSTANTIVOS.proprio.some(p => p[0] === palavra);
@@ -138,6 +179,10 @@ BB.conteudo = (function () {
     if (id.startsWith('m:')) {
       const [a, b] = id.slice(2).split('x').map(Number);
       return criarMat(a, b);
+    }
+    if (id.startsWith('k:')) {
+      const [, a, op, b] = /^k:(\d+)([+-])(\d+)$/.exec(id);
+      return criarConta(op, Number(a), Number(b));
     }
     if (id.startsWith('p:s:')) return criarSubst(id.slice(4));
     return criarPort(id.slice(2));
@@ -153,7 +198,7 @@ BB.conteudo = (function () {
   }
 
   function paraRevisar(fase) {
-    const prefixo = fase === 'mat' ? 'm:' : 'p:';
+    const prefixo = { mat: 'm:', port: 'p:', kart: 'k:' }[fase];
     return Object.keys(U.dados.itens)
       .filter(id => id.startsWith(prefixo) && U.dados.itens[id].peso > 0 && existe(id))
       .sort((x, y) => U.dados.itens[y].peso - U.dados.itens[x].peso)
@@ -181,6 +226,15 @@ BB.conteudo = (function () {
         usados.add(q.id);
         lista.push(q);
       }
+    } else if (fase === 'kart') {
+      // 4 de cada conta, misturadas.
+      const usados = new Set();
+      lista = U.embaralhar(['+', '+', '+', '+', '-', '-', '-', '-', 'x', 'x', 'x', 'x']).map(tipo => {
+        let q, tentativas = 0;
+        do { q = contaKart(tipo); } while (usados.has(q.id) && ++tentativas < 40);
+        usados.add(q.id);
+        return q;
+      });
     } else {
       const proprios = U.embaralhar(SUBSTANTIVOS.proprio).slice(0, 2).map(p => p[0]);
       const comuns = U.embaralhar(SUBSTANTIVOS.comum).slice(0, 2);
@@ -209,7 +263,7 @@ BB.conteudo = (function () {
   }
 
   return {
-    PORTAS, PALAVRAS, SUBSTANTIVOS, FAIXAS_MAT, MENSAGENS,
-    criarMat, criarPort, criarSubst, montarCorrida, agendarRepeticao, registrar, proximaMensagem,
+    PORTAS, PALAVRAS, SUBSTANTIVOS, FAIXAS_MAT, KART, MENSAGENS,
+    criarMat, criarConta, criarPort, criarSubst, montarCorrida, agendarRepeticao, registrar, proximaMensagem,
   };
 })();

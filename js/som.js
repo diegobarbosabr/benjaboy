@@ -54,6 +54,8 @@ BB.som = (function () {
     },
     erro() { ruido(0.18, 0.22); tom(300, 0.02, 0.35, 'sawtooth', 0.1, 90); },
     batida() { ruido(0.14, 0.2); tom(180, 0, 0.18, 'triangle', 0.14, 70); },
+    tiro() { ruido(0.12, 0.1); tom(820, 0, 0.16, 'triangle', 0.09, 260); },
+    splat() { ruido(0.22, 0.24); tom(220, 0, 0.22, 'sine', 0.14, 60); },
     contagem() { tom(440, 0, 0.15, 'square', 0.08); },
     largada() { tom(880, 0, 0.35, 'square', 0.1); },
     chegada() {

@@ -16,7 +16,7 @@
 <link rel="icon" href="icone.png">
 <link rel="apple-touch-icon" href="icone.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="estilo.css?v=2">
+<link rel="stylesheet" href="estilo.css?v=3">
 </head>
 <body>
 <canvas id="tela"></canvas>
@@ -32,12 +32,20 @@
     <span>FASE 2 · PORTUGUÊS</span>
     <span class="recorde" id="rec-port"></span>
   </button>
-  <p class="dica">Toque do lado <b>esquerdo</b> ou <b>direito</b> da tela pra trocar de pista. Passe pela porta com a resposta certa!</p>
+  <button class="botao fase" data-fase="kart">
+    <span>FASE 3 · KART</span>
+    <span class="recorde" id="rec-kart"></span>
+  </button>
+  <p class="dica">Toque do lado <b>esquerdo</b> ou <b>direito</b> da tela pra trocar de pista e passe pela resposta certa. No kart, cada acerto vale uma gosma pra atirar!</p>
 </section>
 
 <section id="resultado" class="painel escondido">
   <p class="colocacao" id="res-pos"></p>
   <canvas id="retrato-res" class="retrato pequeno"></canvas>
+  <p class="premio escondido" id="res-premio">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/></svg>
+    VOCÊ VAI GANHAR UM KINDLE!
+  </p>
   <p class="acertos" id="res-acertos"></p>
   <p class="novo-recorde escondido" id="res-recorde">NOVO RECORDE!</p>
   <p class="mensagem" id="res-msg"></p>
@@ -57,6 +65,11 @@
   <p class="acertos">Vire o celular em pé pra jogar</p>
 </section>
 
+<button id="bt-atirar" class="escondido" aria-label="Atirar gosma">
+  <span>ATIRAR</span>
+  <span class="municao"><i></i><i></i><i></i></span>
+</button>
+
 <button id="bt-som" class="icone" aria-label="Ligar ou desligar o som">
   <svg id="ic-som-on" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
   <svg id="ic-som-off" class="escondido" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.6 3 2.7-2.7-1.4-1.4-2.7 2.7-2.7-2.7-1.4 1.4 2.7 2.7-2.7 2.7 1.4 1.4 2.7-2.7 2.7 2.7 1.4-1.4-2.7-2.7z"/></svg>
@@ -65,13 +78,13 @@
   <svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
 </button>
 
-<script src="js/util.js?v=2"></script>
-<script src="js/conteudo.js?v=2"></script>
-<script src="js/som.js?v=2"></script>
-<script src="js/musica.js?v=2"></script>
-<script src="js/desenho.js?v=2"></script>
-<script src="js/corrida.js?v=2"></script>
-<script src="js/cena.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/util.js?v=3"></script>
+<script src="js/conteudo.js?v=3"></script>
+<script src="js/som.js?v=3"></script>
+<script src="js/musica.js?v=3"></script>
+<script src="js/desenho.js?v=3"></script>
+<script src="js/corrida.js?v=3"></script>
+<script src="js/cena.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

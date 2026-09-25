@@ -261,66 +261,207 @@ BB.desenho = (function () {
       ctx.fillText(o.numero, 0, -53 * u);
     }
 
+    cabecaDeCostas(ctx, u, -86, o);
+    if (o.tonto) tontura(ctx, u, fase, -86);
+    ctx.restore();
+  }
+
+  // Cabeça vista de costas: capacete do bot ou o cabelo do Benjaboy.
+  // cy é o centro da cabeça, em unidades u.
+  function cabecaDeCostas(ctx, u, cy, o) {
+    const Y = v => (cy + v) * u;
     if (o.capacete) {
       ctx.fillStyle = o.capacete;
       ctx.beginPath();
-      ctx.arc(0, -86 * u, 16 * u, 0, Math.PI * 2);
+      ctx.arc(0, Y(0), 16 * u, 0, Math.PI * 2);
       ctx.fill();
       ctx.save();
       ctx.clip();
       ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.fillRect(-3 * u, -104 * u, 6 * u, 36 * u);
+      ctx.fillRect(-3 * u, Y(-18), 6 * u, 36 * u);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fillRect(-20 * u, -76 * u, 40 * u, 8 * u);
+      ctx.fillRect(-20 * u, Y(10), 40 * u, 8 * u);
       ctx.restore();
       ctx.beginPath();
-      ctx.arc(0, -86 * u, 16 * u, 0, Math.PI * 2);
+      ctx.arc(0, Y(0), 16 * u, 0, Math.PI * 2);
       ctx.stroke();
-    } else {
-      ctx.fillStyle = C.pele;
-      [-1, 1].forEach(l => {
-        elipse(ctx, l * 15 * u, -83 * u, 4 * u, 6 * u);
-        ctx.fill();
-        ctx.stroke();
-      });
-      // Nuca coberta pelo cabelo bagunçado
-      ctx.fillStyle = C.cabelo;
-      ctx.beginPath();
-      ctx.arc(0, -87 * u, 15.5 * u, Math.PI * 0.95, Math.PI * 2.05);
-      ctx.lineTo(14 * u, -78 * u);
-      ctx.lineTo(9 * u, -73 * u);
-      ctx.lineTo(5 * u, -77 * u);
-      ctx.lineTo(0, -71 * u);
-      ctx.lineTo(-5 * u, -77 * u);
-      ctx.lineTo(-9 * u, -72 * u);
-      ctx.lineTo(-14 * u, -78 * u);
-      ctx.closePath();
+      return;
+    }
+    ctx.fillStyle = C.pele;
+    [-1, 1].forEach(l => {
+      elipse(ctx, l * 15 * u, Y(3), 4 * u, 6 * u);
       ctx.fill();
       ctx.stroke();
-      ctx.strokeStyle = C.cabeloClaro;
-      ctx.lineWidth = 2.5 * u;
+    });
+    // Nuca coberta pelo cabelo bagunçado
+    ctx.fillStyle = C.cabelo;
+    ctx.beginPath();
+    ctx.arc(0, Y(-1), 15.5 * u, Math.PI * 0.95, Math.PI * 2.05);
+    [[14, 8], [9, 13], [5, 9], [0, 15], [-5, 9], [-9, 14], [-14, 8]].forEach(([px, py]) => ctx.lineTo(px * u, Y(py)));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = C.cabeloClaro;
+    ctx.lineWidth = 2.5 * u;
+    ctx.beginPath();
+    ctx.moveTo(-8 * u, Y(-11));
+    ctx.quadraticCurveTo(-2 * u, Y(-4), -4 * u, Y(6));
+    ctx.moveTo(6 * u, Y(-12));
+    ctx.quadraticCurveTo(10 * u, Y(-4), 7 * u, Y(5));
+    ctx.stroke();
+  }
+
+  function tontura(ctx, u, fase, cy) {
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5 * u;
+    for (let i = 0; i < 3; i++) {
+      const a = fase * 0.6 + i * 2.1;
+      const sx = Math.cos(a) * 24 * u, sy = (cy - 10) * u + Math.sin(a) * 7 * u;
       ctx.beginPath();
-      ctx.moveTo(-8 * u, -97 * u);
-      ctx.quadraticCurveTo(-2 * u, -90 * u, -4 * u, -80 * u);
-      ctx.moveTo(6 * u, -98 * u);
-      ctx.quadraticCurveTo(10 * u, -90 * u, 7 * u, -81 * u);
+      ctx.moveTo(sx - 4 * u, sy);
+      ctx.lineTo(sx + 4 * u, sy);
+      ctx.moveTo(sx, sy - 4 * u);
+      ctx.lineTo(sx, sy + 4 * u);
       ctx.stroke();
     }
+  }
 
-    if (o.tonto) {
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 2.5 * u;
-      for (let i = 0; i < 3; i++) {
-        const a = fase * 0.6 + i * 2.1;
-        const sx = Math.cos(a) * 24 * u, sy = -96 * u + Math.sin(a) * 7 * u;
+  // Kart visto de trás. (x, y) é o chão; h é a altura em px (kart + piloto).
+  // o = { capacete: cor do bot (sem ela, é o Benjaboy), numero, rot, tonto }
+  function kart(ctx, x, y, h, fase, o) {
+    const u = h / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    elipse(ctx, 0, 0, 38 * u, 8 * u);
+    ctx.fill();
+    ctx.translate(0, -Math.abs(Math.sin(fase * 2)) * 1.5 * u);
+    if (o.rot) {
+      ctx.translate(0, -30 * u);
+      ctx.rotate(o.rot);
+      ctx.translate(0, 30 * u);
+    }
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = C.contorno;
+    const linha = Math.max(1, 2.2 * u);
+    ctx.lineWidth = linha;
+    const lataria = o.capacete || '#ffd23f';
+
+    // Rodas da frente (mais longe, menores)
+    ctx.fillStyle = '#1b1b24';
+    [-1, 1].forEach(l => {
+      caixa(ctx, l * 26 * u - 6 * u, -58 * u, 12 * u, 14 * u, 3 * u);
+      ctx.fill();
+      ctx.stroke();
+    });
+    // Assoalho em trapézio, da traseira larga para a frente estreita
+    ctx.fillStyle = lataria;
+    ctx.beginPath();
+    ctx.moveTo(-30 * u, -8 * u);
+    ctx.lineTo(-20 * u, -56 * u);
+    ctx.lineTo(20 * u, -56 * u);
+    ctx.lineTo(30 * u, -8 * u);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Piloto: roupa, e a cabeça por cima
+    ctx.fillStyle = o.capacete ? '#f1f1f1' : C.camisa;
+    caixa(ctx, -14 * u, -64 * u, 28 * u, 30 * u, 8 * u);
+    ctx.fill();
+    ctx.stroke();
+    // Motor atrás do banco e para-choque
+    ctx.fillStyle = '#6b7280';
+    caixa(ctx, -11 * u, -36 * u, 22 * u, 16 * u, 3 * u);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#26262f';
+    caixa(ctx, -30 * u, -16 * u, 60 * u, 9 * u, 4 * u);
+    ctx.fill();
+    ctx.stroke();
+    if (o.numero) {
+      ctx.fillStyle = '#ffd23f';
+      ctx.font = fonte(8 * u);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(o.numero, 0, -11.2 * u);
+    }
+    // Rodas de trás, com o sulco girando
+    [-1, 1].forEach(l => {
+      const rx = l * 33 * u;
+      ctx.fillStyle = '#1b1b24';
+      caixa(ctx, rx - 8 * u, -26 * u, 16 * u, 26 * u, 4 * u);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 2 * u;
+      for (let k = 0; k < 3; k++) {
+        const sy = -24 * u + (((fase * 6 + k * 8) % 24) * u);
         ctx.beginPath();
-        ctx.moveTo(sx - 4 * u, sy);
-        ctx.lineTo(sx + 4 * u, sy);
-        ctx.moveTo(sx, sy - 4 * u);
-        ctx.lineTo(sx, sy + 4 * u);
+        ctx.moveTo(rx - 6 * u, sy);
+        ctx.lineTo(rx + 6 * u, sy);
         ctx.stroke();
       }
+      ctx.strokeStyle = C.contorno;
+      ctx.lineWidth = linha;
+    });
+    cabecaDeCostas(ctx, u, -74, o);
+    if (o.tonto) tontura(ctx, u, fase, -74);
+    ctx.restore();
+  }
+
+  // Caixas de resposta do kart, flutuando sobre cada pista.
+  function caixas(ctx, x0, y, larg, rotulos, estados, t) {
+    const L = larg / 3, lado = L * 0.62;
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < 3; i++) {
+      const est = estados[i];
+      if (est === 'aberta' || rotulos[i] === null) continue;
+      const cx = x0 + i * L + L / 2;
+      const dx = est === 'errada' ? Math.sin(t * 60) * L * 0.03 : 0;
+      const topo = y - lado * 1.25 + Math.sin(t * 4 + i) * L * 0.03;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      elipse(ctx, cx, y, lado * 0.45, lado * 0.12);
+      ctx.fill();
+      ctx.fillStyle = est === 'errada' ? C.errada : est === 'certa' ? C.certa : '#ff9f1c';
+      ctx.strokeStyle = C.contorno;
+      ctx.lineWidth = Math.max(1.5, L * 0.03);
+      caixa(ctx, cx - lado / 2 + dx, topo, lado, lado, lado * 0.18);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      caixa(ctx, cx - lado * 0.4 + dx, topo + lado * 0.08, lado * 0.8, lado * 0.2, lado * 0.1);
+      ctx.fill();
+      ctx.fillStyle = C.portaTexto;
+      const tam = lado * 0.5;
+      ctx.font = fonte(tam);
+      const w = ctx.measureText(rotulos[i]).width;
+      if (w > lado * 0.84) ctx.font = fonte(tam * lado * 0.84 / w);
+      ctx.fillText(rotulos[i], cx + dx, topo + lado * 0.56);
     }
+    ctx.restore();
+  }
+
+  // Bola de gosma voando para a frente, com rastro.
+  function gosma(ctx, x, y, r) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(124, 252, 0, 0.35)';
+    elipse(ctx, x, y + r * 1.6, r * 0.7, r * 1.4);
+    ctx.fill();
+    ctx.fillStyle = '#7cfc00';
+    ctx.strokeStyle = '#1f5f00';
+    ctx.lineWidth = Math.max(1.5, r * 0.15);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.arc(x - r * 0.3, y - r * 0.35, r * 0.28, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -445,5 +586,5 @@ BB.desenho = (function () {
     ctx.restore();
   }
 
-  return { C, FONTE, fonte, caixa, elipse, coracao, retrato, corredor, portal, bloco, chegada };
+  return { C, FONTE, fonte, caixa, elipse, coracao, retrato, corredor, kart, caixas, gosma, portal, bloco, chegada };
 })();

@@ -120,6 +120,66 @@ body { touch-action: none; }
 .treinar ul { margin: 0; padding-left: 18px; }
 .treinar li { margin: 2px 0; }
 
+/* Prêmio de quem chega em 1º */
+.premio {
+  margin: 0;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  background: var(--amarelo);
+  color: var(--fundo);
+  font-size: clamp(14px, 4.3vw, 18px);
+  font-weight: 900;
+  box-shadow: 0 5px 0 var(--laranja);
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+.premio svg { width: 24px; height: 24px; flex: none; fill: var(--fundo); }
+@keyframes pulsar { 50% { transform: scale(1.05); } }
+@media (prefers-reduced-motion: reduce) { .premio { animation: none; } }
+
+/* Fase do kart: botão de atirar, com a munição em bolinhas */
+#bt-atirar {
+  position: fixed;
+  z-index: 20;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: 92px;
+  height: 92px;
+  padding: 0;
+  border: 4px solid #1f5f00;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  color: #10310a;
+  background: radial-gradient(circle at 35% 30%, #c6ff7a, #7cfc00 55%, #3fa300);
+  box-shadow: 0 6px 0 #1f5f00;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+#bt-atirar:active { transform: translateX(-50%) translateY(4px); box-shadow: 0 2px 0 #1f5f00; }
+#bt-atirar.vazio { filter: grayscale(0.85); opacity: 0.6; }
+#bt-atirar .municao { display: flex; gap: 5px; }
+#bt-atirar .municao i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #10310a; }
+#bt-atirar .municao i.cheia { background: #10310a; }
+
+/* Tela baixa: três fases no menu sem precisar rolar */
+@media (max-height: 740px) {
+  .titulo { font-size: 46px; }
+  .retrato { width: 150px; height: 150px; }
+  .retrato.pequeno { width: 120px; height: 120px; }
+  .painel { gap: 10px; }
+  .botao { padding: 12px 18px; }
+}
+
 /* Celular deitado: o jogo é feito em pé. */
 #gire { display: none; z-index: 30; }
 #gire .celular { width: 64px; height: 64px; fill: #fff; transform: rotate(90deg); }

@@ -8,6 +8,7 @@ BB.corrida = (function () {
   const PRIMEIRA = 900;        // posição da primeira porta
   const VEL_INI = 220, VEL_FIM = 290;
   const TEMPO_ERRO = 1.1, TEMPO_BATIDA = 0.7;
+  const MUNICAO = 3, VEL_TIRO = 760, TEMPO_GOSMA = 1.2;   // fase do kart
   const BOTS = [
     { nome: 'TURBO', cor: '#e63946' }, { nome: 'NITRO', cor: '#f77f00' },
     { nome: 'FAÍSCA', cor: '#2a9d8f' }, { nome: 'TROVÃO', cor: '#8338ec' },
@@ -38,11 +39,11 @@ BB.corrida = (function () {
         obstaculos.push({ tipo: 'muro', y, faixas: [0, 1, 2].filter(f => f !== livre) });
       }
     }
-    const jogador = novoCorredor(centroFaixa(1), 0, { jogador: true });
+    const jogador = novoCorredor(centroFaixa(1), 0, { jogador: true, gosma: 0 });
     const bots = BOTS.map((b, i) => novoCorredor(centroFaixa([0, 2, 0, 1, 2][i]), i < 2 ? 0 : -110,
       { nome: b.nome, cor: b.cor, habilidade: U.aleatorio(0.62, 0.82), ritmo: U.aleatorio(0.9, 0.97) }));
     c = {
-      fase, mensagem, perguntas, portas, obstaculos, jogador, bots,
+      fase, mensagem, perguntas, portas, obstaculos, jogador, bots, kart: fase === 'kart', tiros: [],
       chegadaY: PRIMEIRA + (K.PORTAS - 1) * ESPACO + 1000,
       estado: 'contagem', relogio: 0, contagem: 3.4, cameraY: -200,
       acertos: 0, erros: [], avisos: [], particulas: [], chegados: 0, posicaoFinal: 0,
@@ -60,6 +61,17 @@ BB.corrida = (function () {
       j.alvoX = centroFaixa(nova);
       S.tocar('pista');
     }
+  }
+
+  // Kart: a gosma sai reto na pista dele e acerta o primeiro rival da frente.
+  function atirar() {
+    if (!c || !c.kart || c.estado !== 'correndo') return false;
+    const j = c.jogador;
+    if (j.gosma <= 0 || j.tonto > 0 || j.chegou !== null) return false;
+    j.gosma--;
+    c.tiros.push({ x: centroFaixa(faixaDe(j.alvoX)), y: j.y + 40, t: 1.3 });
+    S.tocar('tiro');
+    return true;
   }
 
   // ---------- Simulação ----------
@@ -97,6 +109,7 @@ BB.corrida = (function () {
         c.acertos++;
         porta.estados[faixa] = 'aberta';
         r.boost = 1.2;
+        if (c.kart) r.gosma = Math.min(MUNICAO, r.gosma + 1);
         estilhacos(r.x, porta.y);
         aviso('BOA!', '#3ddc84', 1.1);
         S.tocar('acerto');
@@ -193,6 +206,8 @@ BB.corrida = (function () {
       }
       return;
     }
+    // Com gosma no ar ninguém troca de pista à toa: mirou certo, acerta.
+    if (c.tiros.length) return;
     if (Math.random() < dt * 0.35) r.alvoX = centroFaixa(U.inteiro(0, 2));
   }
 
@@ -215,6 +230,7 @@ BB.corrida = (function () {
       c.obstaculos.forEach(o => { if (o.tipo === 'bloco') o.fase += dt * o.vel; });
       atualizarCorredor(c.jogador, dt);
       c.bots.forEach(b => atualizarCorredor(b, dt));
+      atualizarTiros(dt);
       if (c.estado === 'chegou') {
         c.fimEm -= dt;
         if (c.fimEm <= 0) c.estado = 'fim';
@@ -227,6 +243,22 @@ BB.corrida = (function () {
       p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= 400 * dt; p.t -= dt; p.giro += dt * 8;
     });
     c.particulas = c.particulas.filter(p => p.t > 0);
+  }
+
+  function atualizarTiros(dt) {
+    c.tiros.forEach(tr => {
+      tr.y += VEL_TIRO * dt;
+      tr.t -= dt;
+      const alvo = c.bots.find(b => b.tonto === 0 && b.chegou === null &&
+        Math.abs(b.x - tr.x) < FAIXA * 0.45 && tr.y >= b.y - 10 && tr.y <= b.y + 30);
+      if (!alvo) return;
+      tr.t = 0;
+      tropecar(alvo, TEMPO_GOSMA);
+      gosmada(alvo.x, alvo.y);
+      aviso('PEGOU!', '#3ddc84', 0.9);
+      S.tocar('splat');
+    });
+    c.tiros = c.tiros.filter(tr => tr.t > 0);
   }
 
   function posicaoAtual() {
@@ -247,6 +279,13 @@ BB.corrida = (function () {
     }
   }
 
+  function gosmada(x, y) {
+    for (let i = 0; i < 16; i++) {
+      c.particulas.push({ x: x + U.aleatorio(-20, 20), y: y + U.aleatorio(0, 30), vx: U.aleatorio(-160, 160),
+        vy: U.aleatorio(60, 240), t: 0.7, cor: U.sortear(['#7CFC00', '#3ddc84', '#b8ff5a']), tam: U.aleatorio(6, 11), giro: 0 });
+    }
+  }
+
   function confete() {
     const cores = ['#ffd23f', '#ff3d7f', '#3ddc84', '#2de2e6', '#ffffff'];
     for (let i = 0; i < 70; i++) {
@@ -256,7 +295,7 @@ BB.corrida = (function () {
   }
 
   return {
-    LARG, FAIXA, iniciar, atualizar, mover, posicaoAtual, blocoX,
+    LARG, FAIXA, MUNICAO, iniciar, atualizar, mover, atirar, posicaoAtual, blocoX,
     get estado() { return c; },
   };
 })();

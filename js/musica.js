@@ -135,6 +135,19 @@ BB.musica = (function () {
         if (p === 15 || p === 31) I.sino(ac, saida, t);
       },
     },
+    // Kart: baixo de "motor" em toda colcheia e guitarra no ritmo 3-3-2.
+    kart: {
+      bpm: 150,
+      raizes: 'AAAAAAAA' + 'CCCCDDDD' + 'AAAAAAAA' + 'GGGGEEEE',
+      tocar(ac, saida, p, t, d) {
+        const nota = this.raizes[p], b = p % 8;
+        I.baixo(ac, saida, t, nota, d * 0.8, b % 2 === 0 ? 2 : 3);
+        if (b === 0 || b === 3 || b === 6) I.guitarra(ac, saida, t, nota, d * (b === 6 ? 2 : 1.2), b === 0);
+        if (b === 0 || b === 4) I.bumbo(ac, saida, t);
+        if (b === 2 || b === 6) I.caixa(ac, saida, t);
+        I.chimbal(ac, saida, t, b % 2 === 1);
+      },
+    },
   };
 
   let bus = null, relogio = null, tema = null, passo = 0, proximo = 0, pedido = 0;
