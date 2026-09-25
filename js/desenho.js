@@ -465,9 +465,16 @@ BB.desenho = (function () {
     ctx.restore();
   }
 
+  // Cores do portal em cada cenário.
+  const PALETAS = {
+    arena: { poste: '#5b2bd9', viga: '#7c4dff', porta: '#ffd23f' },
+    neve: { poste: '#1d4ed8', viga: '#60a5fa', porta: '#dbeafe' },
+  };
+
   // Portal com três portas. estados[i]: 'normal' | 'aberta' | 'errada' | 'certa'.
   // Rótulo null é parede listrada (pergunta de duas opções).
-  function portal(ctx, x0, y, larg, rotulos, estados, t) {
+  function portal(ctx, x0, y, larg, rotulos, estados, t, paleta) {
+    paleta = paleta || PALETAS.arena;
     const L = larg / 3, H = L * 0.62;
     ctx.save();
     ctx.lineJoin = 'round';
@@ -501,7 +508,7 @@ BB.desenho = (function () {
         ctx.stroke();
         continue;
       }
-      ctx.fillStyle = est === 'errada' ? C.errada : est === 'certa' ? C.certa : C.porta;
+      ctx.fillStyle = est === 'errada' ? C.errada : est === 'certa' ? C.certa : paleta.porta;
       caixa(ctx, px, y - H, pw, H, L * 0.06);
       ctx.fill();
       ctx.stroke();
@@ -513,16 +520,237 @@ BB.desenho = (function () {
       if (w > pw * 0.86) ctx.font = fonte(tam * pw * 0.86 / w);
       ctx.fillText(rotulo, px + pw / 2, y - H / 2 + L * 0.01);
     }
-    ctx.fillStyle = C.poste;
+    ctx.fillStyle = paleta.poste;
     for (let i = 0; i <= 3; i++) {
       caixa(ctx, x0 + i * L - L * 0.05, y - H - L * 0.12, L * 0.1, H + L * 0.12, L * 0.03);
       ctx.fill();
       ctx.stroke();
     }
-    ctx.fillStyle = C.viga;
+    ctx.fillStyle = paleta.viga;
     caixa(ctx, x0 - L * 0.1, y - H - L * 0.24, larg + L * 0.2, L * 0.15, L * 0.05);
     ctx.fill();
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // Snowboarder visto de trás, balançando na prancha. (x, y) é o chão.
+  function snowboard(ctx, x, y, h, fase, o) {
+    const u = h / 100;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    [-1, 1].forEach(l => {
+      elipse(ctx, l * 24 * u, 5 * u, 10 * u, 4 * u);
+      ctx.fill();
+    });
+    ctx.fillStyle = 'rgba(30, 64, 175, 0.18)';
+    elipse(ctx, 0, 0, 34 * u, 7 * u);
+    ctx.fill();
+    if (o.rot) {
+      ctx.translate(0, -40 * u);
+      ctx.rotate(o.rot);
+      ctx.translate(0, 40 * u);
+    }
+    ctx.rotate(Math.sin(fase * 0.35) * 0.12);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    const linha = Math.max(1, 2.2 * u);
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = linha;
+
+    ctx.fillStyle = o.capacete ? '#f1f1f1' : '#ffd23f';
+    caixa(ctx, -32 * u, -8 * u, 64 * u, 9 * u, 4.5 * u);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = o.capacete || '#ff3d7f';
+    ctx.fillRect(-20 * u, -5.5 * u, 40 * u, 3 * u);
+
+    // Pernas flexionadas e botas
+    [-1, 1].forEach(l => {
+      ctx.beginPath();
+      ctx.moveTo(l * 6 * u, -38 * u);
+      ctx.lineTo(l * 15 * u, -24 * u);
+      ctx.lineTo(l * 12 * u, -10 * u);
+      ctx.lineWidth = 10 * u;
+      ctx.strokeStyle = C.contorno;
+      ctx.stroke();
+      ctx.lineWidth = 7 * u;
+      ctx.strokeStyle = '#1f2937';
+      ctx.stroke();
+      ctx.lineWidth = linha;
+      ctx.strokeStyle = C.contorno;
+      ctx.fillStyle = '#374151';
+      caixa(ctx, l * 12 * u - 6 * u, -13 * u, 12 * u, 6 * u, 2 * u);
+      ctx.fill();
+      ctx.stroke();
+    });
+
+    // Braços abertos para equilibrar
+    const jaqueta = o.capacete ? o.cor : C.camisa;
+    [-1, 1].forEach(l => {
+      ctx.beginPath();
+      ctx.moveTo(l * 14 * u, -62 * u);
+      ctx.lineTo(l * 34 * u, -52 * u);
+      ctx.lineWidth = 9 * u;
+      ctx.strokeStyle = C.contorno;
+      ctx.stroke();
+      ctx.lineWidth = 6 * u;
+      ctx.strokeStyle = jaqueta;
+      ctx.stroke();
+      ctx.lineWidth = linha;
+      ctx.strokeStyle = C.contorno;
+      ctx.fillStyle = '#1f2937';
+      ctx.beginPath();
+      ctx.arc(l * 35 * u, -52 * u, 4.5 * u, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.fillStyle = jaqueta;
+    caixa(ctx, -16 * u, -70 * u, 32 * u, 34 * u, 8 * u);
+    ctx.fill();
+    ctx.stroke();
+    if (o.numero) {
+      ctx.fillStyle = '#fff';
+      ctx.font = fonte(15 * u);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(o.numero, 0, -52 * u);
+    }
+    cabecaDeCostas(ctx, u, -82, o);
+    if (o.tonto) tontura(ctx, u, fase, -82);
+    ctx.restore();
+  }
+
+  // Pinheiro com neve na ponta. (x, y) é a base do tronco; s é a altura.
+  function pinheiro(ctx, x, y, s) {
+    ctx.save();
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = Math.max(1.2, s * 0.02);
+    ctx.fillStyle = 'rgba(30, 64, 175, 0.15)';
+    elipse(ctx, x, y, s * 0.3, s * 0.07);
+    ctx.fill();
+    ctx.fillStyle = '#6b4226';
+    ctx.fillRect(x - s * 0.05, y - s * 0.16, s * 0.1, s * 0.16);
+    ctx.strokeRect(x - s * 0.05, y - s * 0.16, s * 0.1, s * 0.16);
+    [[0.14, 0.34, 0.4], [0.38, 0.27, 0.36], [0.6, 0.2, 0.36]].forEach(([base, meia, alt]) => {
+      ctx.fillStyle = '#166534';
+      ctx.beginPath();
+      ctx.moveTo(x - meia * s, y - base * s);
+      ctx.lineTo(x + meia * s, y - base * s);
+      ctx.lineTo(x, y - (base + alt) * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    });
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.08, y - s * 0.84);
+    ctx.lineTo(x + s * 0.08, y - s * 0.84);
+    ctx.lineTo(x, y - s * 0.96);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Bola de neve rolando. (x, y) é o chão; giro mostra a rolagem.
+  function bolaDeNeve(ctx, x, y, r, giro) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(30, 64, 175, 0.18)';
+    elipse(ctx, x, y, r * 0.9, r * 0.22);
+    ctx.fill();
+    const cy = y - r;
+    const g = ctx.createRadialGradient(x - r * 0.35, cy - r * 0.35, r * 0.1, x, cy, r);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(1, '#bfdbfe');
+    ctx.fillStyle = g;
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = Math.max(1.5, r * 0.06);
+    ctx.beginPath();
+    ctx.arc(x, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(96, 165, 250, 0.7)';
+    ctx.lineWidth = Math.max(1, r * 0.05);
+    for (let i = 0; i < 3; i++) {
+      const a = giro + i * 2.1;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5, r * 0.18, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Rolo listrado que gira e desliza cobrindo duas pistas (arena).
+  function rolo(ctx, cx, y, w, h, fase) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    elipse(ctx, cx, y, w * 0.5, h * 0.25);
+    ctx.fill();
+    const x = cx - w / 2, topo = y - h;
+    caixa(ctx, x, topo, w, h, h / 2);
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = '#ff3d7f';
+    ctx.fillRect(x, topo, w, h);
+    ctx.fillStyle = '#ffd23f';
+    const passo = h * 1.2, desloca = ((fase * h * 2) % passo + passo) % passo;
+    for (let k = -h - passo + desloca; k < w + h; k += passo) {
+      ctx.beginPath();
+      ctx.moveTo(x + k, topo + h);
+      ctx.lineTo(x + k + passo / 2, topo + h);
+      ctx.lineTo(x + k + passo / 2 + h, topo);
+      ctx.lineTo(x + k + h, topo);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.fillRect(x, topo + h * 0.12, w, h * 0.18);
+    ctx.restore();
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = Math.max(1.5, h * 0.08);
+    caixa(ctx, x, topo, w, h, h / 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Tambor vermelho deslizando (kart).
+  function tambor(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    elipse(ctx, x, y, w * 0.55, w * 0.14);
+    ctx.fill();
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = Math.max(1.5, w * 0.04);
+    ctx.fillStyle = '#dc2626';
+    caixa(ctx, x - w / 2, y - h, w, h, w * 0.12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#7f1d1d';
+    [0.3, 0.7].forEach(f => ctx.fillRect(x - w / 2, y - h * f - h * 0.05, w, h * 0.1));
+    ctx.fillStyle = '#fca5a5';
+    elipse(ctx, x, y - h, w * 0.5, w * 0.14);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Barreira de pneus empilhados (kart).
+  function pneus(ctx, x, y, w) {
+    ctx.save();
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = Math.max(1.5, w * 0.03);
+    const h = w * 0.26;
+    for (let i = 0; i < 3; i++) {
+      const topo = y - (i + 1) * h;
+      ctx.fillStyle = '#1f2937';
+      caixa(ctx, x - w / 2, topo, w, h, h * 0.45);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = i === 1 ? '#ffffff' : '#4b5563';
+      caixa(ctx, x - w * 0.34, topo + h * 0.3, w * 0.68, h * 0.4, h * 0.2);
+      ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -586,5 +814,8 @@ BB.desenho = (function () {
     ctx.restore();
   }
 
-  return { C, FONTE, fonte, caixa, elipse, coracao, retrato, corredor, kart, caixas, gosma, portal, bloco, chegada };
+  return {
+    C, FONTE, PALETAS, fonte, caixa, elipse, coracao, retrato, corredor, kart, snowboard, caixas, gosma,
+    portal, bloco, rolo, pinheiro, bolaDeNeve, tambor, pneus, chegada,
+  };
 })();

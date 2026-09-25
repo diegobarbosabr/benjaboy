@@ -54,6 +54,12 @@ BB.som = (function () {
     },
     erro() { ruido(0.18, 0.22); tom(300, 0.02, 0.35, 'sawtooth', 0.1, 90); },
     batida() { ruido(0.14, 0.2); tom(180, 0, 0.18, 'triangle', 0.14, 70); },
+    combo() {
+      tom(880, 0, 0.07, 'square', 0.09);
+      tom(1175, 0.06, 0.07, 'square', 0.09);
+      tom(1568, 0.12, 0.16, 'square', 0.09);
+    },
+    ultrapassa() { tom(500, 0, 0.14, 'triangle', 0.08, 1200); },
     tiro() { ruido(0.12, 0.1); tom(820, 0, 0.16, 'triangle', 0.09, 260); },
     splat() { ruido(0.22, 0.24); tom(220, 0, 0.22, 'sine', 0.14, 60); },
     contagem() { tom(440, 0, 0.15, 'square', 0.08); },

@@ -136,16 +136,21 @@
     mostrar(null);
   }
 
+  // O próximo quadro é agendado antes de tudo: um erro num quadro nunca
+  // congela o jogo.
   function quadro(agora) {
+    requestAnimationFrame(quadro);
     const dt = (agora - ultimo) / 1000;
     ultimo = agora;
-    if (rodando && !pausado) {
+    if (!rodando || pausado) return;
+    try {
       R.atualizar(dt);
       CENA.desenhar(ctx, agora / 1000);
       if (fase === 'kart') atualizarMunicao();
       if (R.estado.estado === 'fim') terminar();
+    } catch (e) {
+      if (!quadro.avisou) { quadro.avisou = true; console.error(e); }
     }
-    requestAnimationFrame(quadro);
   }
 
   // ---------- Entrada ----------
