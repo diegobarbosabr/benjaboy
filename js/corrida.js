@@ -10,10 +10,11 @@ BB.corrida = (function () {
   const TEMPO_ERRO = 1.1, TEMPO_BATIDA = 0.7;
   const MUNICAO = 3, VEL_TIRO = 760, TEMPO_GOSMA = 1.2;   // fase do kart
   const TEMAS = { mat: 'arena', port: 'neve', kart: 'kart' };
+  // Os rivais são os amigos dele.
   const BOTS = [
-    { nome: 'TURBO', cor: '#e63946' }, { nome: 'NITRO', cor: '#f77f00' },
-    { nome: 'FAÍSCA', cor: '#2a9d8f' }, { nome: 'TROVÃO', cor: '#8338ec' },
-    { nome: 'BLITZ', cor: '#118ab2' },
+    { nome: 'FREITAS', cor: '#e63946' }, { nome: 'JOÃO MIGUEL', cor: '#f77f00' },
+    { nome: 'JOÃO PEDRO', cor: '#2a9d8f' }, { nome: 'ARTUR', cor: '#8338ec' },
+    { nome: 'FRANCISCO', cor: '#118ab2' },
   ];
 
   let c = null;   // estado da corrida atual

@@ -98,6 +98,12 @@ BB.musica = (function () {
     },
     chimbal(ac, saida, t, forte) { batida(ac, saida, t, 0.04, 'highpass', 7000, forte ? 0.25 : 0.14); },
     palma(ac, saida, t) { batida(ac, saida, t, 0.11, 'bandpass', 1200, 0.55); },
+    // Sintetizador anos 80: serra + quadrada levemente desafinadas.
+    sintetizador(ac, saida, t, f, dur) {
+      const destino = filtro(ac, 'lowpass', 1400, envelope(ac, saida, t, 0.35, dur));
+      osc(ac, 'sawtooth', f, t, dur, destino);
+      osc(ac, 'square', f * 1.003, t, dur, destino);
+    },
     sino(ac, saida, t) {
       const destino = filtro(ac, 'bandpass', 1000, envelope(ac, saida, t, 0.25, 0.22));
       [562, 845].forEach(x => osc(ac, 'square', x, t, 0.22, destino));
@@ -133,6 +139,23 @@ BB.musica = (function () {
         }
         if (b === 2 || b === 6) I.palma(ac, saida, t);
         if (p === 15 || p === 31) I.sino(ac, saida, t);
+      },
+    },
+    // Meia-Noite: arpejo lento em lá menor (lá, fá, ré, mi) e um bumbo que
+    // parece coração batendo. Semitons contados a partir do lá de 220 Hz.
+    noite: {
+      bpm: 96,
+      raizes: 'AAAAAAAA' + 'FFFFFFFF' + 'DDDDDDDD' + 'EEEEEEEE',
+      arpejos: {
+        A: [0, 3, 7, 12, 7, 3, 0, 3], F: [-4, 0, 3, 8, 3, 0, -4, 0],
+        D: [-7, -4, 0, 5, 0, -4, -7, -4], E: [-5, -1, 2, 7, 2, -1, -5, -1],
+      },
+      tocar(ac, saida, p, t, d) {
+        const acorde = this.raizes[p], b = p % 8;
+        I.sintetizador(ac, saida, t, 220 * Math.pow(2, this.arpejos[acorde][b] / 12), d * 0.95);
+        if (b === 0 || b === 4) I.baixo(ac, saida, t, acorde, d * 3.6, 2);
+        if (b === 0 || b === 1) I.bumbo(ac, saida, t);
+        if (b % 2 === 1) I.chimbal(ac, saida, t, false);
       },
     },
     // Kart: baixo de "motor" em toda colcheia e guitarra no ritmo 3-3-2.

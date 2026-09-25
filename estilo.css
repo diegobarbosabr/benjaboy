@@ -171,7 +171,12 @@ body { touch-action: none; }
 #bt-atirar .municao i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #10310a; }
 #bt-atirar .municao i.cheia { background: #10310a; }
 
-/* Tela baixa: três fases no menu sem precisar rolar */
+/* Fase 4 · Meia-Noite: botão escuro no menu */
+.botao.noite { background: #1e1b3a; color: #f87171; box-shadow: 0 6px 0 #0b0a18; }
+.botao.noite:active { box-shadow: 0 2px 0 #0b0a18; }
+.botao.noite .recorde { color: #e2e8f0; }
+
+/* Tela baixa: as fases no menu sem precisar rolar */
 @media (max-height: 740px) {
   .titulo { font-size: 46px; }
   .retrato { width: 150px; height: 150px; }

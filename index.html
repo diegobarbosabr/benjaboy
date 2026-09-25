@@ -16,7 +16,7 @@
 <link rel="icon" href="icone.png">
 <link rel="apple-touch-icon" href="icone.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="estilo.css?v=4">
+<link rel="stylesheet" href="estilo.css?v=5">
 </head>
 <body>
 <canvas id="tela"></canvas>
@@ -36,7 +36,11 @@
     <span>FASE 3 · KART</span>
     <span class="recorde" id="rec-kart"></span>
   </button>
-  <p class="dica">Toque do lado <b>esquerdo</b> ou <b>direito</b> da tela pra trocar de pista e passe pela resposta certa. No kart, cada acerto vale uma gosma pra atirar!</p>
+  <button class="botao fase noite" data-fase="noite">
+    <span>FASE 4 · MEIA-NOITE</span>
+    <span class="recorde" id="rec-noite"></span>
+  </button>
+  <p class="dica">Nas corridas, toque do lado <b>esquerdo</b> ou <b>direito</b> pra trocar de pista e passe pela resposta certa. Na <b>Meia-Noite</b>, ilumine as sombras com o dedo e pegue a da resposta certa!</p>
 </section>
 
 <section id="resultado" class="painel escondido">
@@ -65,6 +69,7 @@
   <p class="acertos">Vire o celular em pé pra jogar</p>
 </section>
 
+
 <button id="bt-atirar" class="escondido" aria-label="Atirar gosma">
   <span>ATIRAR</span>
   <span class="municao"><i></i><i></i><i></i></span>
@@ -78,13 +83,15 @@
   <svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
 </button>
 
-<script src="js/util.js?v=4"></script>
-<script src="js/conteudo.js?v=4"></script>
-<script src="js/som.js?v=4"></script>
-<script src="js/musica.js?v=4"></script>
-<script src="js/desenho.js?v=4"></script>
-<script src="js/corrida.js?v=4"></script>
-<script src="js/cena.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/util.js?v=5"></script>
+<script src="js/conteudo.js?v=5"></script>
+<script src="js/som.js?v=5"></script>
+<script src="js/musica.js?v=5"></script>
+<script src="js/desenho.js?v=5"></script>
+<script src="js/corrida.js?v=5"></script>
+<script src="js/cena.js?v=5"></script>
+<script src="js/torneio.js?v=5"></script>
+<script src="js/noite.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>

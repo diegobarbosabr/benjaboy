@@ -1,6 +1,7 @@
 // Liga tudo: telas, toques, laço do jogo e recordes.
 (function () {
   const U = BB.util, S = BB.som, M = BB.musica, K = BB.conteudo, R = BB.corrida, CENA = BB.cena, D = BB.desenho;
+  const T = BB.torneio, NOITE = BB.noite;
   const $ = id => document.getElementById(id);
   const tela = $('tela');
   const ctx = tela.getContext('2d');
@@ -16,6 +17,10 @@
     $('bt-som').classList.toggle('escondido', nome === null);
     $('bt-atirar').classList.toggle('escondido', nome !== null || fase !== 'kart');
   }
+
+  // A Meia-Noite é a caça às sombras; as outras três fases são corridas.
+  function ehNoite() { return fase === 'noite'; }
+  function estadoAtual() { return ehNoite() ? T.estado : R.estado; }
 
   // Botão ATIRAR mostra a munição em bolinhas; só redesenha quando muda.
   function atualizarMunicao() {
@@ -50,7 +55,7 @@
   }
 
   function textoRecorde(r) {
-    return r ? 'Recorde: ' + r.pos + 'º lugar · ' + r.acertos + '/' + K.PORTAS : '';
+    return r ? 'Recorde: ' + r.pos + 'º lugar · ' + r.acertos + '/' + (r.total || K.PORTAS) : '';
   }
 
   function abrirMenu() {
@@ -60,6 +65,7 @@
     $('rec-mat').textContent = textoRecorde(U.dados.recordes.mat);
     $('rec-port').textContent = textoRecorde(U.dados.recordes.port);
     $('rec-kart').textContent = textoRecorde(U.dados.recordes.kart);
+    $('rec-noite').textContent = textoRecorde(U.dados.recordes.noite);
     mostrar('menu');
     retrato($('retrato-menu'), 'normal');
   }
@@ -68,8 +74,15 @@
     M.parar();
     S.destravar();
     fase = qual;
-    R.iniciar(fase, K.proximaMensagem());
-    CENA.medir(tela);
+    if (ehNoite()) {
+      T.iniciar(K.proximaMensagem());
+      NOITE.medir(tela);
+      NOITE.iniciar();
+      M.iniciar('noite');
+    } else {
+      R.iniciar(fase, K.proximaMensagem());
+      CENA.medir(tela);
+    }
     rodando = true;
     pausado = false;
     ultimo = performance.now();
@@ -87,17 +100,19 @@
   function terminar() {
     M.parar();
     rodando = false;
-    const c = R.estado;
+    const c = estadoAtual();
     const pos = c.posicaoFinal;
-    const novo = { pos, acertos: c.acertos };
+    const total = c.total || K.PORTAS;
+    const novo = { pos, acertos: c.acertos, total };
     const recorde = melhorQue(novo, U.dados.recordes[fase]);
     if (recorde) {
       U.dados.recordes[fase] = novo;
       U.salvar();
     }
     $('res-pos').textContent = pos === 1 ? '1º LUGAR!' : pos + 'º LUGAR';
+    $('bt-denovo').textContent = ehNoite() ? 'JOGAR DE NOVO' : 'CORRER DE NOVO';
     $('res-premio').classList.toggle('escondido', pos !== 1);
-    $('res-acertos').textContent = 'Acertou ' + c.acertos + ' de ' + K.PORTAS;
+    $('res-acertos').textContent = 'Acertou ' + c.acertos + ' de ' + total;
     $('res-recorde').classList.toggle('escondido', !recorde);
     $('res-msg').textContent = c.mensagem + ' ';
     $('res-msg').insertAdjacentHTML('beforeend', CORACAO);
@@ -132,7 +147,7 @@
   function continuar() {
     pausado = false;
     ultimo = performance.now();
-    if (R.estado.estado === 'correndo') M.iniciar(fase);
+    if (ehNoite() ? T.estado.estado !== 'fim' : R.estado.estado === 'correndo') M.iniciar(fase);
     mostrar(null);
   }
 
@@ -144,6 +159,13 @@
     ultimo = agora;
     if (!rodando || pausado) return;
     try {
+      if (ehNoite()) {
+        T.atualizar(dt);
+        NOITE.atualizar(Math.min(dt, 0.05), agora / 1000);
+        NOITE.desenhar(ctx, agora / 1000);
+        if (T.estado.estado === 'fim' && T.estado.fimEm <= 0) terminar();
+        return;
+      }
       R.atualizar(dt);
       CENA.desenhar(ctx, agora / 1000);
       if (fase === 'kart') atualizarMunicao();
@@ -157,11 +179,22 @@
   tela.addEventListener('pointerdown', e => {
     if (!rodando || pausado) return;
     e.preventDefault();
-    R.mover(e.clientX < window.innerWidth / 2 ? -1 : 1);
+    if (ehNoite()) NOITE.tocar(e.clientX, e.clientY);
+    else R.mover(e.clientX < window.innerWidth / 2 ? -1 : 1);
+  });
+  // Meia-Noite: a lanterna segue o dedo (ou o mouse, no computador).
+  tela.addEventListener('pointermove', e => {
+    if (rodando && !pausado && ehNoite()) NOITE.mirar(e.clientX, e.clientY);
   });
   tela.addEventListener('contextmenu', e => e.preventDefault());
   window.addEventListener('keydown', e => {
     if (!rodando || pausado) return;
+    if (ehNoite()) {
+      if (e.key >= '1' && e.key <= '4') T.responder(Number(e.key) - 1);
+      if (e.key === 'm') T.pedirAjuda();
+      if (e.key === ' ') T.pularIntro();
+      return;
+    }
     if (e.key === 'ArrowLeft' || e.key === 'a') R.mover(-1);
     if (e.key === 'ArrowRight' || e.key === 'd') R.mover(1);
     if (e.key === ' ' || e.key === 'ArrowUp') {
@@ -192,7 +225,7 @@
   window.addEventListener('resize', () => {
     // Deitou o celular no meio da corrida: pausa por baixo do aviso de virar.
     if (window.innerWidth > window.innerHeight && window.innerHeight <= 500) pausar();
-    CENA.medir(tela);
+    if (ehNoite()) NOITE.medir(tela); else CENA.medir(tela);
     if (!telas.menu.classList.contains('escondido')) retrato($('retrato-menu'), 'normal');
   });
 

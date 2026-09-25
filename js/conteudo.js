@@ -41,9 +41,63 @@ BB.conteudo = (function () {
         'MA[CH]UCADO', '[CH]UVEIRO', '[CH]ICLETE', '[CH]EIRO',
       ],
     },
+    // G ou J: só antes de E e I, onde as duas soam igual. Fora "viagem"
+    // (viajem), "berinjela" e "canjica" (têm grafia antiga com G) e "laje".
+    g: {
+      facil: [
+        '[G]ELO', '[G]ENTE', '[G]IRAFA', '[G]IBI', '[G]IZ', 'MÁ[G]ICO', 'TI[G]ELA',
+        'HO[J]E', '[J]EITO', '[J]IPE', '[J]ILÓ', '[J]IBOIA', 'SU[J]EIRA', 'BEI[J]INHO',
+      ],
+      dificil: [
+        '[G]ELADEIRA', 'RELÓ[G]IO', 'COLÉ[G]IO', 'GARA[G]EM', 'IMA[G]EM', 'FERRU[G]EM',
+        '[G]INÁSTICA', '[G]IRASSOL', '[G]EADA', 'FU[G]IR', 'VA[G]EM',
+        'MA[J]ESTADE', 'OB[J]ETO', 'PRO[J]ETO', 'SU[J]EITO', 'GOR[J]ETA', 'LARAN[J]EIRA', 'CERE[J]EIRA',
+      ],
+    },
+    // R ou RR. Fora os pares que viram outra palavra: caro/carro, muro/murro,
+    // moro/morro, era/erra, fera/ferra, tora/torra, carinho/carrinho...
+    r: {
+      facil: [
+        'TE[RR]A', 'GA[RR]AFA', 'BA[RR]IGA', 'A[RR]OZ', 'BO[RR]ACHA', 'CO[RR]IDA', 'TO[RR]E',
+        'PI[R]ATA', 'BA[R]ATA', 'CO[R]UJA', 'PA[R]EDE', 'TESOU[R]A',
+        '[R]ODA', '[R]OUPA', '[R]ISADA',
+      ],
+      dificil: [
+        'MACA[RR]ÃO', 'SO[RR]ISO', 'TO[RR]ADA', 'CHU[RR]ASCO', 'BA[RR]ACA', 'BEZE[RR]O',
+        'FE[RR]ADURA', 'TE[RR]EMOTO', 'CO[RR]EIO', 'SE[RR]OTE', 'CA[RR]OSSEL',
+        'CA[R]ECA', 'TARTA[R]UGA', 'CADEI[R]A',
+        'HON[R]A', 'GEN[R]O', 'EN[R]OLADO', 'EN[R]EDO',
+      ],
+    },
+    // M ou N antes de consoante: antes de P e B é sempre M.
+    m: {
+      facil: [
+        'CA[M]PO', 'SA[M]BA', 'TA[M]BOR', 'PO[M]BO', 'TE[M]PO', 'LI[M]PO', 'BA[M]BU',
+        'CA[N]TO', 'MU[N]DO', 'PO[N]TE', 'DE[N]TE', 'VE[N]TO', 'TI[N]TA', 'O[N]DA',
+      ],
+      dificil: [
+        'BO[M]BEIRO', 'LÂ[M]PADA', 'SE[M]PRE', 'CA[M]PEÃO', 'U[M]BIGO', 'SO[M]BRA', 'LE[M]BRAR',
+        'CA[M]BALHOTA', 'CO[M]PUTADOR', 'E[M]PADA',
+        'ELEFA[N]TE', 'PRESE[N]TE', 'BRA[N]CO', 'LO[N]GE', 'INVE[N]TAR', 'CE[N]TRO', 'LA[N]TERNA',
+      ],
+    },
   };
 
-  const OPCOES = { s: ['S', 'SS', 'Ç'], x: ['X', 'CH'] };
+  const OPCOES = { s: ['S', 'SS', 'Ç'], x: ['X', 'CH'], g: ['G', 'J'], r: ['R', 'RR'], m: ['M', 'N'] };
+  const FAMILIAS = Object.keys(OPCOES);
+
+  function familiaDe(marcada) {
+    return FAMILIAS.find(f => PALAVRAS[f].facil.includes(marcada) || PALAVRAS[f].dificil.includes(marcada)) || null;
+  }
+
+  // A regrinha que aparece junto da resposta, quando existe uma regra simples.
+  function regraDe(familia, antes, certo, depois) {
+    if (familia === 'm') return /^[PB]/.test(depois) ? 'antes de P e B, é M' : 'antes de ' + depois[0] + ', é N';
+    if (familia !== 'r') return null;
+    if (!antes) return 'no começo da palavra, é um R só';
+    if (/[NLS]$/.test(antes)) return 'depois de ' + antes.slice(-1) + ', é um R só';
+    return certo === 'RR' ? 'entre vogais, som forte é RR' : 'entre vogais, som fraco é R';
+  }
 
   // Substantivo próprio ou comum. Em caixa alta não dá para ver a maiúscula,
   // então nenhuma palavra pode ter as duas leituras: ficaram de fora "Recife"
@@ -131,19 +185,16 @@ BB.conteudo = (function () {
   function criarPort(marcada) {
     const m = /^(.*)\[(.+)\](.*)$/.exec(marcada);
     const antes = m[1], certo = m[2], depois = m[3];
-    const familia = OPCOES.x.includes(certo) ? 'x' : 's';
-    // X ou CH tem só duas portas; a terceira pista vira uma parede.
-    const portas = familia === 's' ? OPCOES.s.slice() : OPCOES.x.concat([null]);
-    return {
-      id: 'p:' + marcada,
-      fase: 'port',
-      antes,
-      depois,
-      pergunta: antes + '_' + depois,
-      portas: U.embaralhar(portas),
-      certo,
-      resposta: antes + certo + depois + ', com ' + certo,
-    };
+    const familia = familiaDe(marcada);
+    // Quando só há duas letras, a terceira pista vira uma parede.
+    const portas = OPCOES[familia].length === 3 ? OPCOES[familia].slice() : OPCOES[familia].concat([null]);
+    const resposta = antes + certo + depois + ', com ' + certo;
+    const regra = regraDe(familia, antes, certo, depois);
+    const q = { id: 'p:' + marcada, fase: 'port', antes, depois, pergunta: antes + '_' + depois,
+      portas: U.embaralhar(portas), certo, resposta };
+    // A regra vai no alto do aviso de erro e na lista "pra treinar".
+    if (regra) Object.assign(q, { titulo: regra.toUpperCase(), treinar: resposta + ': ' + regra });
+    return q;
   }
 
   // A palavra aparece em caixa alta; no aviso e na lista "pra treinar" ela vem
@@ -171,8 +222,7 @@ BB.conteudo = (function () {
       const palavra = id.slice(4);
       return SUBSTANTIVOS.comum.includes(palavra) || SUBSTANTIVOS.proprio.some(p => p[0] === palavra);
     }
-    const marcada = id.slice(2);
-    return ['s', 'x'].some(f => PALAVRAS[f].facil.includes(marcada) || PALAVRAS[f].dificil.includes(marcada));
+    return familiaDe(id.slice(2)) !== null;
   }
 
   function recriar(id) {
@@ -205,12 +255,11 @@ BB.conteudo = (function () {
       .slice(0, 3);
   }
 
-  // Meia corrida de português: 2 de S/SS/Ç, 2 de X/CH e 2 de substantivo
-  // (um próprio e um comum, para não dar para chutar sempre o mesmo).
-  function metade(nivel, substantivos) {
-    const s = U.embaralhar(PALAVRAS.s[nivel]).slice(0, 2);
-    const x = U.embaralhar(PALAVRAS.x[nivel]).slice(0, 2);
-    return U.embaralhar(s.concat(x).map(criarPort).concat(substantivos.map(criarSubst)));
+  // Meia corrida de português: 4 palavras de 4 regras diferentes e 2 de
+  // substantivo (um próprio e um comum, para não dar para chutar sempre o mesmo).
+  function metade(nivel, familias, substantivos) {
+    const palavras = familias.map(f => U.sortear(PALAVRAS[f][nivel]));
+    return U.embaralhar(palavras.map(criarPort).concat(substantivos.map(criarSubst)));
   }
 
   function montarCorrida(fase) {
@@ -238,7 +287,11 @@ BB.conteudo = (function () {
     } else {
       const proprios = U.embaralhar(SUBSTANTIVOS.proprio).slice(0, 2).map(p => p[0]);
       const comuns = U.embaralhar(SUBSTANTIVOS.comum).slice(0, 2);
-      lista = metade('facil', [proprios[0], comuns[0]]).concat(metade('dificil', [proprios[1], comuns[1]]));
+      // A regra que fica de fora na primeira metade entra com certeza na segunda.
+      const ordem = U.embaralhar(FAMILIAS);
+      const segunda = [ordem[4]].concat(U.embaralhar(ordem.slice(0, 4)).slice(0, 3));
+      lista = metade('facil', ordem.slice(0, 4), [proprios[0], comuns[0]])
+        .concat(metade('dificil', segunda, [proprios[1], comuns[1]]));
     }
     // Revisão das corridas anteriores nas portas 3, 7 e 11.
     const vagas = [2, 6, 10];
@@ -263,7 +316,7 @@ BB.conteudo = (function () {
   }
 
   return {
-    PORTAS, PALAVRAS, SUBSTANTIVOS, FAIXAS_MAT, KART, MENSAGENS,
+    PORTAS, PALAVRAS, FAMILIAS, SUBSTANTIVOS, FAIXAS_MAT, KART, MENSAGENS,
     criarMat, criarConta, criarPort, criarSubst, montarCorrida, agendarRepeticao, registrar, proximaMensagem,
   };
 })();

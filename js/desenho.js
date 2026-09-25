@@ -47,8 +47,113 @@ BB.desenho = (function () {
     [-0.9, 0.18], [-1.06, 0.2],
   ];
 
-  // Benjaboy de frente, do peito para cima. (cx, cy) é o centro da cabeça.
-  function retrato(ctx, cx, cy, r, expressao) {
+  // f > 0 clareia a cor, f < 0 escurece.
+  function ajustarCor(hex, f) {
+    const n = parseInt(hex.slice(1), 16);
+    const canal = s => {
+      const v = (n >> s) & 255;
+      return Math.round(f > 0 ? v + (255 - v) * f : v * (1 + f));
+    };
+    return 'rgb(' + canal(16) + ',' + canal(8) + ',' + canal(0) + ')';
+  }
+
+  const CORES_BENJA = {
+    pele: C.pele, sombra: C.peleSombra, camisa: C.camisa, gola: C.camisaClara,
+    cabelo: C.cabelo, escuro: C.cabeloEscuro, claro: C.cabeloClaro,
+  };
+
+  function coresDe(ap) {
+    if (!ap) return CORES_BENJA;
+    return {
+      pele: ap.pele, sombra: ajustarCor(ap.pele, -0.12), camisa: ap.camisa, gola: ajustarCor(ap.camisa, 0.25),
+      cabelo: ap.cabelo, escuro: ajustarCor(ap.cabelo, -0.3), claro: ajustarCor(ap.cabelo, 0.25),
+    };
+  }
+
+  // Cabelo atrás da cabeça, de acordo com o penteado.
+  function cabeloAtras(ctx, r, estilo, cor) {
+    ctx.fillStyle = cor.escuro;
+    if (estilo === 'cacheado') {
+      for (let a = 150; a <= 390; a += 20) {
+        const rad = a * Math.PI / 180;
+        ctx.beginPath();
+        ctx.arc(Math.cos(rad) * r, -0.1 * r + Math.sin(rad) * r, 0.3 * r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+      return;
+    }
+    const forma = { franja: [-0.1, 1.14, 1.08], curto: [-0.12, 1.0, 1.0], bone: [-0.05, 1.0, 0.95], topete: [-0.12, 1.05, 1.02], liso: [0.05, 1.12, 1.18] }[estilo];
+    elipse(ctx, 0, forma[0] * r, forma[1] * r, forma[2] * r);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Cabelo (ou boné) por cima da testa, para os amigos da Meia-Noite.
+  function cabeloFrente(ctx, r, estilo, cor, ap) {
+    ctx.fillStyle = cor.cabelo;
+    const touca = hairline => {
+      ctx.beginPath();
+      ctx.moveTo(-0.95 * r, -0.05 * r);
+      ctx.bezierCurveTo(-1.0 * r, -0.95 * r, -0.45 * r, -1.14 * r, 0, -1.14 * r);
+      ctx.bezierCurveTo(0.45 * r, -1.14 * r, 1.0 * r, -0.95 * r, 0.95 * r, -0.05 * r);
+      ctx.lineTo(0.85 * r, hairline * r);
+      ctx.quadraticCurveTo(0, (hairline - 0.18) * r, -0.85 * r, hairline * r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    };
+    if (estilo === 'curto') touca(-0.38);
+    else if (estilo === 'cacheado') {
+      touca(-0.42);
+      for (let x = -0.72; x <= 0.73; x += 0.36) {
+        ctx.beginPath();
+        ctx.arc(x * r, (-0.92 + Math.abs(x) * 0.35) * r, 0.26 * r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    } else if (estilo === 'topete') {
+      touca(-0.34);
+      ctx.beginPath();
+      ctx.moveTo(-0.5 * r, -0.62 * r);
+      ctx.bezierCurveTo(-0.45 * r, -1.55 * r, 0.65 * r, -1.55 * r, 0.72 * r, -0.72 * r);
+      ctx.quadraticCurveTo(0.2 * r, -0.95 * r, -0.5 * r, -0.62 * r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (estilo === 'liso') {
+      ctx.beginPath();
+      ctx.moveTo(-1.0 * r, 0.3 * r);
+      ctx.bezierCurveTo(-1.15 * r, -1.0 * r, 0.9 * r, -1.25 * r, 1.0 * r, 0.3 * r);
+      ctx.lineTo(0.9 * r, -0.08 * r);
+      ctx.quadraticCurveTo(0.3 * r, -0.52 * r, -0.62 * r, -0.2 * r);
+      ctx.quadraticCurveTo(-0.82 * r, 0.02 * r, -1.0 * r, 0.3 * r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    } else if (estilo === 'bone') {
+      ctx.fillStyle = ap.bone;
+      ctx.beginPath();
+      ctx.moveTo(-1.0 * r, -0.3 * r);
+      ctx.bezierCurveTo(-1.0 * r, -1.3 * r, 1.0 * r, -1.3 * r, 1.0 * r, -0.3 * r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = ajustarCor(ap.bone, -0.25);
+      elipse(ctx, 0.1 * r, -0.3 * r, 1.12 * r, 0.2 * r);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      caixa(ctx, -0.22 * r, -0.95 * r, 0.44 * r, 0.3 * r, 0.08 * r);
+      ctx.fill();
+    }
+  }
+
+  // Rosto de frente, do peito para cima. (cx, cy) é o centro da cabeça. Sem
+  // `ap` é o Benjaboy; com `ap` ({ estilo, pele, cabelo, camisa, bone }) é um
+  // amigo da turma.
+  function retrato(ctx, cx, cy, r, expressao, ap) {
+    const cor = coresDe(ap), estilo = ap ? ap.estilo : 'franja';
     ctx.save();
     ctx.translate(cx, cy);
     ctx.lineJoin = 'round';
@@ -57,12 +162,12 @@ BB.desenho = (function () {
     const linha = Math.max(1.5, r * 0.05);
     ctx.lineWidth = linha;
 
-    ctx.fillStyle = C.peleSombra;
+    ctx.fillStyle = cor.sombra;
     caixa(ctx, -0.3 * r, 0.7 * r, 0.6 * r, 0.5 * r, 0.1 * r);
     ctx.fill();
 
     // Moletom e gola
-    ctx.fillStyle = C.camisa;
+    ctx.fillStyle = cor.camisa;
     ctx.beginPath();
     ctx.moveTo(-1.45 * r, 2.5 * r);
     ctx.bezierCurveTo(-1.4 * r, 1.3 * r, -0.75 * r, 1.04 * r, 0, 1.04 * r);
@@ -70,7 +175,7 @@ BB.desenho = (function () {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = C.camisaClara;
+    ctx.fillStyle = cor.gola;
     ctx.beginPath();
     ctx.moveTo(-0.52 * r, 1.08 * r);
     ctx.quadraticCurveTo(0, 1.55 * r, 0.52 * r, 1.08 * r);
@@ -81,12 +186,9 @@ BB.desenho = (function () {
     ctx.stroke();
 
     // Volume do cabelo atrás da cabeça
-    ctx.fillStyle = C.cabeloEscuro;
-    elipse(ctx, 0, -0.1 * r, 1.14 * r, 1.08 * r);
-    ctx.fill();
-    ctx.stroke();
+    cabeloAtras(ctx, r, estilo, cor);
 
-    ctx.fillStyle = C.pele;
+    ctx.fillStyle = cor.pele;
     [-1, 1].forEach(l => {
       elipse(ctx, l * 0.95 * r, 0.24 * r, 0.16 * r, 0.22 * r);
       ctx.fill();
@@ -118,7 +220,7 @@ BB.desenho = (function () {
       ctx.beginPath();
       ctx.ellipse(ex, ey, 0.17 * r, 0.12 * r, 0, Math.PI * 1.08, Math.PI * 1.92);
       ctx.stroke();
-      ctx.strokeStyle = C.cabeloEscuro;
+      ctx.strokeStyle = cor.escuro;
       ctx.lineWidth = linha * 1.3;
       ctx.beginPath();
       ctx.moveTo(ex + l * 0.17 * r, ey - 0.16 * r);
@@ -161,8 +263,14 @@ BB.desenho = (function () {
       ctx.stroke();
     }
 
+    if (estilo !== 'franja') {
+      cabeloFrente(ctx, r, estilo, cor, ap);
+      ctx.restore();
+      return;
+    }
+
     // Franja por cima da testa
-    ctx.fillStyle = C.cabelo;
+    ctx.fillStyle = cor.cabelo;
     ctx.beginPath();
     ctx.moveTo(-1.06 * r, 0.2 * r);
     ctx.bezierCurveTo(-1.2 * r, -0.9 * r, -0.5 * r, -1.2 * r, 0.05 * r, -1.18 * r);
@@ -174,7 +282,7 @@ BB.desenho = (function () {
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-    ctx.strokeStyle = C.cabeloClaro;
+    ctx.strokeStyle = cor.claro;
     ctx.lineWidth = linha * 1.2;
     [[-0.72, -0.5, -0.25, -0.95, 0.3, -0.92], [-0.2, -0.3, 0.2, -0.78, 0.72, -0.72], [0.36, -0.28, 0.62, -0.62, 0.92, -0.42]]
       .forEach(([a, b, c, d, e, f]) => {
@@ -754,6 +862,228 @@ BB.desenho = (function () {
     ctx.restore();
   }
 
+  // O Fedorento, monstro da Meia-Noite: bobalhão, não assustador. (x, y) é o
+  // centro do corpo; s é a escala; boca vai de 0 (fechada, sorrisão) a 1
+  // (escancarada); mastiga amassa o corpo; medo (0 ou 1) é a cara de susto
+  // quando a Melifulina late; tempo mexe as linhas de fedor.
+  function monstro(ctx, x, y, s, boca, mastiga, medo, tempo) {
+    const roxo = '#6d28d9';
+    tempo = tempo || 0;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1 + mastiga * 0.05, 1 - mastiga * 0.05);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+
+    // Linhas de fedor, verdes e onduladas, subindo da cabeça
+    ctx.strokeStyle = 'rgba(132, 204, 22, 0.8)';
+    ctx.lineWidth = 3 * s;
+    [-28, 0, 28].forEach((dx, k) => {
+      const onda = Math.sin(tempo * 4 + k * 2) * 6 * s;
+      ctx.beginPath();
+      ctx.moveTo(dx * s, -92 * s);
+      ctx.quadraticCurveTo(dx * s + 10 * s + onda, -106 * s, dx * s, -118 * s);
+      ctx.quadraticCurveTo(dx * s - 10 * s - onda, -130 * s, dx * s, -142 * s);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = C.contorno;
+    ctx.lineWidth = 3 * s;
+    // Orelhas de morcego, pontudas, com o miolo rosado
+    [-1, 1].forEach(l => {
+      ctx.fillStyle = roxo;
+      ctx.beginPath();
+      ctx.moveTo(l * 22 * s, -66 * s);
+      ctx.quadraticCurveTo(l * 50 * s, -96 * s, l * 76 * s, -118 * s);
+      ctx.quadraticCurveTo(l * 80 * s, -78 * s, l * 72 * s, -38 * s);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#c084fc';
+      ctx.beginPath();
+      ctx.moveTo(l * 36 * s, -64 * s);
+      ctx.quadraticCurveTo(l * 54 * s, -86 * s, l * 68 * s, -100 * s);
+      ctx.quadraticCurveTo(l * 70 * s, -74 * s, l * 64 * s, -50 * s);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Corpo de gosma com a barra ondulada
+    ctx.fillStyle = roxo;
+    ctx.beginPath();
+    ctx.moveTo(-80 * s, 50 * s);
+    ctx.bezierCurveTo(-96 * s, -40 * s, -50 * s, -76 * s, 0, -76 * s);
+    ctx.bezierCurveTo(50 * s, -76 * s, 96 * s, -40 * s, 80 * s, 50 * s);
+    [40, 0, -40, -80].forEach((bx, i) => ctx.quadraticCurveTo((bx + 20) * s, (i % 2 ? 70 : 72) * s, bx * s, (i === 3 ? 50 : 52) * s));
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(167, 139, 250, 0.35)';
+    elipse(ctx, 0, 22 * s, 50 * s, 30 * s);
+    ctx.fill();
+
+    // Olhos de malandro, um maior que o outro, com a pálpebra meio baixa.
+    // Com medo, arregalados e com a pupila pequenininha.
+    [[-26, -32, 16], [24, -36, 21]].forEach(([ex, ey, r]) => {
+      ex *= s; ey *= s; r *= s;
+      ctx.fillStyle = '#ffffff';
+      elipse(ctx, ex, ey, r, r);
+      ctx.fill();
+      if (medo) {
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(ex, ey, r * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        elipse(ctx, ex, ey, r, r);
+        ctx.stroke();
+        return;
+      }
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(ex + r * 0.1, ey + r * 0.22, r * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#111';
+      ctx.beginPath();
+      ctx.arc(ex + r * 0.12, ey + r * 0.26, r * 0.27, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.save();
+      elipse(ctx, ex, ey, r, r);
+      ctx.clip();
+      ctx.fillStyle = roxo;
+      ctx.fillRect(ex - r, ey - r, 2 * r, r * 0.75);
+      ctx.restore();
+      ctx.beginPath();
+      ctx.moveTo(ex - r, ey - r * 0.25);
+      ctx.lineTo(ex + r, ey - r * 0.25);
+      ctx.stroke();
+      elipse(ctx, ex, ey, r, r);
+      ctx.stroke();
+    });
+
+    if (medo) {
+      // Boquinha de "ó!" e uma gota de suor
+      ctx.fillStyle = '#4c0519';
+      elipse(ctx, 0, 16 * s, 10 * s, 13 * s);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#7dd3fc';
+      ctx.beginPath();
+      ctx.moveTo(62 * s, -20 * s);
+      ctx.quadraticCurveTo(70 * s, -4 * s, 62 * s, 2 * s);
+      ctx.quadraticCurveTo(54 * s, -4 * s, 62 * s, -20 * s);
+      ctx.fill();
+    } else if (boca > 0.05) {
+      // Bocona aberta, com língua e dentes arredondados
+      const rx = 44 * s, ry = (6 + boca * 26) * s, by = 12 * s;
+      ctx.fillStyle = '#4c0519';
+      elipse(ctx, 0, by, rx, ry);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#fb7185';
+      elipse(ctx, 0, by + ry * 0.55, rx * 0.5, ry * 0.35);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      [-22, 0, 22].forEach(dx => {
+        caixa(ctx, dx * s - 6 * s, by - ry + 1 * s, 12 * s, 10 * s * Math.min(1, boca * 2), 3 * s);
+        ctx.fill();
+      });
+    } else {
+      // Sorrisão fechado com dois dentões
+      ctx.lineWidth = 4 * s;
+      ctx.beginPath();
+      ctx.moveTo(-40 * s, 8 * s);
+      ctx.quadraticCurveTo(0, 36 * s, 40 * s, 8 * s);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.lineWidth = 2 * s;
+      [-13, 3].forEach(dx => {
+        caixa(ctx, dx * s, 19 * s, 11 * s, 12 * s, 3 * s);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+    ctx.restore();
+  }
+
+  // Melifulina, a cadelinha maltês branca que espanta o Fedorento. (x, y) é
+  // o chão entre as patinhas; latindo abre a boca; tempo abana o rabo.
+  function melifulina(ctx, x, y, s, latindo, tempo) {
+    tempo = tempo || 0;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    // Pelo de nuvem: primeiro o contorno cinza de todas as bolinhas, depois o
+    // branco por cima, para ficar um contorno só em volta do bicho.
+    const rabo = [34 + Math.sin(tempo * 14) * 4, -34, 11];
+    const corpo = [[-18, -18, 17], [0, -14, 19], [18, -18, 17], [-8, -30, 15], [12, -30, 15], rabo];
+    const cabeca = [[0, -58, 21], [-14, -52, 14], [14, -52, 14], [0, -74, 13]];
+    const bolinhas = corpo.concat(cabeca);
+    ctx.fillStyle = '#cbd5e1';
+    bolinhas.forEach(([bx, by, r]) => { ctx.beginPath(); ctx.arc(bx * s, by * s, (r + 2) * s, 0, Math.PI * 2); ctx.fill(); });
+    ctx.fillStyle = '#ffffff';
+    bolinhas.forEach(([bx, by, r]) => { ctx.beginPath(); ctx.arc(bx * s, by * s, r * s, 0, Math.PI * 2); ctx.fill(); });
+    // Patinhas
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5 * s;
+    [-16, -5, 6, 17].forEach(px => { elipse(ctx, px * s, -2 * s, 5 * s, 4 * s); ctx.fill(); ctx.stroke(); });
+    // Orelhas compridas e caídas, cor de creme
+    ctx.fillStyle = '#f5ede0';
+    [-1, 1].forEach(l => {
+      ctx.save();
+      ctx.translate(l * 20 * s, -52 * s);
+      ctx.rotate(l * 0.18);
+      elipse(ctx, 0, 0, 8 * s, 17 * s);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    });
+    // Olhinhos pretos com brilho, focinho e boca
+    [-8, 8].forEach(ox => {
+      ctx.fillStyle = '#111827';
+      ctx.beginPath();
+      ctx.arc(ox * s, -60 * s, 3.4 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(ox * s + 1.1 * s, -61.2 * s, 1.1 * s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = '#111827';
+    elipse(ctx, 0, -51 * s, 4.2 * s, 3.2 * s);
+    ctx.fill();
+    if (latindo) {
+      ctx.fillStyle = '#9f1239';
+      elipse(ctx, 0, -43 * s, 5 * s, 5 * s);
+      ctx.fill();
+      ctx.fillStyle = '#fb7185';
+      elipse(ctx, 0, -40.5 * s, 3 * s, 2.2 * s);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = '#111827';
+      ctx.lineWidth = 1.4 * s;
+      ctx.beginPath();
+      ctx.moveTo(-4 * s, -46 * s);
+      ctx.quadraticCurveTo(0, -43 * s, 4 * s, -46 * s);
+      ctx.stroke();
+    }
+    // Lacinho rosa no topete
+    ctx.fillStyle = '#ec4899';
+    [-1, 1].forEach(l => {
+      ctx.beginPath();
+      ctx.moveTo(0, -82 * s);
+      ctx.lineTo(l * 11 * s, -88 * s);
+      ctx.lineTo(l * 11 * s, -76 * s);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.beginPath();
+    ctx.arc(0, -82 * s, 3 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
   // Bloco de espuma. (x, y) é o centro da base.
   function bloco(ctx, x, y, w, h) {
     ctx.save();
@@ -816,6 +1146,6 @@ BB.desenho = (function () {
 
   return {
     C, FONTE, PALETAS, fonte, caixa, elipse, coracao, retrato, corredor, kart, snowboard, caixas, gosma,
-    portal, bloco, rolo, pinheiro, bolaDeNeve, tambor, pneus, chegada,
+    portal, bloco, rolo, pinheiro, bolaDeNeve, tambor, pneus, chegada, monstro, melifulina,
   };
 })();
