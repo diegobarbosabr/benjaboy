@@ -18,7 +18,7 @@ BB.util = (function () {
 
   // O navegador pode bloquear ou apagar o armazenamento; o jogo funciona sem ele.
   const CHAVE = 'benjaboy:v1';
-  const dados = { som: true, recordes: {}, itens: {}, msg: 0 };
+  const dados = { som: true, recordes: {}, itens: {}, msg: 0, tutorialNoite: false };
   try {
     const salvo = JSON.parse(localStorage.getItem(CHAVE));
     if (salvo && typeof salvo === 'object') {
@@ -26,6 +26,7 @@ BB.util = (function () {
       if (salvo.recordes && typeof salvo.recordes === 'object') dados.recordes = salvo.recordes;
       if (salvo.itens && typeof salvo.itens === 'object') dados.itens = salvo.itens;
       if (Number.isInteger(salvo.msg)) dados.msg = salvo.msg;
+      if (salvo.tutorialNoite === true) dados.tutorialNoite = true;
     }
   } catch (e) { /* segue com o padrão */ }
 

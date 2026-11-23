@@ -8,7 +8,9 @@ BB.torneio = (function () {
   const MAX_RODADAS = 20;
   const DURACAO_PEGO = 3.2;
   const PAUSA_AJUDA = 0.58, ESPERA_AJUDA = 5, DURACAO_RESGATE = 3;   // Melifulina
-  const INTRO_REGRAS = 3.5, INTRO_MELIFULINA = 4.5;                   // abertura em duas partes
+  // Abertura em passos, como tutorial de jogo: só avança quando ele toca em
+  // ENTENDI ou faz o que o passo pede (BB.noite). Nada ali vale ponto.
+  const PASSOS = ['desafio', 'iluminar', 'prender', 'lanternas', 'melifulina', 'pronto'];
   const TEMPOS = [25, 20, 16];    // segundos para responder em cada faixa
   const MATERIAS = ['mat', 'port', 'logica'];
   const NOMES_MATERIA = { mat: 'MATEMÁTICA', port: 'PORTUGUÊS', logica: 'RACIOCÍNIO' };
@@ -293,7 +295,7 @@ BB.torneio = (function () {
 
   function iniciar(mensagem) {
     t = {
-      estado: 'intro', tempo: INTRO_REGRAS + INTRO_MELIFULINA, rodada: 0, limite: 0, pergunta: null, mensagem,
+      estado: 'intro', passo: 0, tempo: 0, rodada: 0, limite: 0, pergunta: null, mensagem,
       ajuda: true, aguardandoAjuda: null, resgate: 0, salvoNa: null,
       jogadores: [jogador('Benjaboy', { voce: true })].concat(AMIGOS.map(a => jogador(a.nome, { forte: a.forte, ap: a.ap }))),
       fila: [], pego: null, acertos: 0, total: 0, erros: [], posicaoFinal: 0, fimEm: 0, piscar: 0, horaDaSombra: false,
@@ -414,10 +416,20 @@ BB.torneio = (function () {
     proximoPego();
   }
 
-  // Toque na abertura: pula das regras para a Melifulina, e dela para a rodada.
+  // Próximo passo da explicação; depois do último, começa a valer. Quem
+  // termina a explicação uma vez ganha o botão PULAR nas próximas.
+  function avancarIntro() {
+    if (!t || t.estado !== 'intro') return;
+    if (++t.passo < PASSOS.length) return;
+    U.dados.tutorialNoite = true;
+    U.salvar();
+    proximaRodada();
+  }
+
   function pularIntro() {
     if (!t || t.estado !== 'intro') return;
-    t.tempo = t.tempo > INTRO_MELIFULINA ? INTRO_MELIFULINA : 0;
+    t.passo = PASSOS.length - 1;
+    avancarIntro();
   }
 
   // Posição de quem ainda está vivo no fim: mais lanternas, depois quem
@@ -445,8 +457,7 @@ BB.torneio = (function () {
     dt = Math.min(dt, 0.05);
     t.piscar = Math.max(0, t.piscar - dt);
     if (t.estado === 'intro') {
-      t.tempo -= dt;
-      if (t.tempo <= 0) proximaRodada();
+      t.tempo += dt;   // só para as animações; quem avança é ele
     } else if (t.estado === 'pergunta') {
       t.tempo -= dt;
       const passou = t.limite - t.tempo;
@@ -493,8 +504,8 @@ BB.torneio = (function () {
   }
 
   return {
-    LANTERNAS, HORA_DA_SOMBRA, MAX_RODADAS, DURACAO_PEGO, DURACAO_RESGATE, ESPERA_AJUDA, INTRO_MELIFULINA, AMIGOS, TURMA, INTRUSOS, FATOS,
-    iniciar, atualizar, responder, pedirAjuda, pularIntro, perguntaDe, faixaDa,
+    LANTERNAS, HORA_DA_SOMBRA, MAX_RODADAS, DURACAO_PEGO, DURACAO_RESGATE, ESPERA_AJUDA, PASSOS, AMIGOS, TURMA, INTRUSOS, FATOS,
+    iniciar, atualizar, responder, pedirAjuda, avancarIntro, pularIntro, perguntaDe, faixaDa,
     get estado() { return t; },
   };
 })();
